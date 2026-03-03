@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>DBD パークランダマイザー</title>
   <style>
-    body { font-family: sans-serif;
-  text-align: center;
-  padding: 40px;
-  background-image: url("background.png");
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  color: #fff;
-  text-shadow: 1px 1px 2px #000;
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 40px;
+      background-image: url("background.png");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: #fff;
+      text-shadow: 1px 1px 2px #000;
     }
     .perk-container {
       display: flex;
@@ -21,16 +22,15 @@
       margin-top: 30px;
     }
     .perk {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 10px;
-  margin: 10px;
-  width: 200px;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-  background-color: rgba(0, 0, 0, 0.6);
-  color: #fff;
- }
-    
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 10px;
+      width: 200px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+      background-color: rgba(0, 0, 0, 0.6);
+      color: #fff;
+    }
     .perk-name {
       font-weight: bold;
       margin: 10px 0 5px;
@@ -44,15 +44,28 @@
       margin: 10px;
       cursor: pointer;
     }
-@keyframes flicker {
-  0% { transform: translateY(0px) rotate(0deg); }
-  25% { transform: translateY(-1px) rotate(-0.3deg); }
-  50% { transform: translateY(1px) rotate(0.3deg); }
-  75% { transform: translateY(-0.5px) rotate(-0.2deg); }
-  100% { transform: translateY(0px) rotate(0deg); }
-}
+
+    /* 結果欄 */
+    .result-area {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #resultText {
+      width: min(720px, 90vw);
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.4);
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      outline: none;
+    }
   </style>
 </head>
+
 <body>
 <!-- 焚き火の音 -->
 <audio id="fireSound" src="fire.mp3" loop></audio>
@@ -72,9 +85,16 @@
     <button onclick="stopShuffle()">ストップ</button>
   </div>
  <div class="perk-container" id="perkContainer"></div>
+<div class="result-area">
+  <input id="resultText" type="text" readonly placeholder="ストップするとここに4つのパーク名が出ます">
+  <button onclick="copyResult()">コピー</button>
+</div>
 
   <script>
-     const stopSound = document.getElementById('stopSound');
+     const fireSound  = document.getElementById('fireSound');
+     const bgmSound   = document.getElementById('bgmSound');
+     const startSound = document.getElementById('startSound');
+     const stopSound  = document.getElementById('stopSound');
 
     // 任意のサバイバーパークの例（もっと増やしてOK）
     const allParks = [     
@@ -1115,72 +1135,100 @@
 
     ];
 
-let shuffleInterval = null;
-let isShuffling = false; // 状態フラグを追加
+    let shuffleInterval = null;
+    let isShuffling = false;
 
-function getRandomParks() {
-  const shuffled = [...allParks].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 4);
-}
+    function getRandomParks() {
+      const shuffled = [...allParks].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, 4);
+    }
 
-function renderParks(parks) {
-  const container = document.getElementById('perkContainer');
-  container.innerHTML = '';
-  parks.forEach(park => {
-    const div = document.createElement('div');
-    div.className = 'perk';
-    div.innerHTML = `
-      <img src="${park.icon}" alt="${park.name}" style="width:96px;height:96px;margin-bottom:12px;">
-      <div class="perk-name">${park.name}</div>
-      <div class="perk-desc">${park.description}</div>
-    `;
-    container.appendChild(div);
-  });
-}
+    function renderParks(parks) {
+      const container = document.getElementById('perkContainer');
+      container.innerHTML = '';
+      parks.forEach(park => {
+        const div = document.createElement('div');
+        div.className = 'perk';
+        div.innerHTML = `
+          <img src="${park.icon}" alt="${park.name}" style="width:96px;height:96px;margin-bottom:12px;">
+          <div class="perk-name">${park.name}</div>
+          <div class="perk-desc">${park.description}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
 
-function startShuffle() {
-  if (isShuffling) return; // 多重起動防止
-  isShuffling = true;
+    function startShuffle() {
+      if (isShuffling) return;
+      isShuffling = true;
 
-  startSound.currentTime = 0;
-  startSound.play();
+      if (startSound) {
+        startSound.currentTime = 0;
+        startSound.play().catch(() => {});
+      }
 
-  shuffleInterval = setInterval(() => {
-    const parks = getRandomParks();
-    renderParks(parks);
-  }, 100);
-}
+      shuffleInterval = setInterval(() => {
+        const parks = getRandomParks();
+        renderParks(parks);
+      }, 100);
+    }
 
-function stopShuffle() {
-  if (!isShuffling) return; // 起動していなければ無視
-  clearInterval(shuffleInterval);
-  shuffleInterval = null;
-  isShuffling = false;
+    // ★ここが「結果欄に 〇〇、〇〇、〇〇、〇〇 を出す」対応版
+    function stopShuffle() {
+      if (!isShuffling) return;
 
-  stopSound.currentTime = 0;
-  stopSound.play();
-}
-// 焚き火とBGMの音量調整
-window.addEventListener('DOMContentLoaded', () => {
-  const fireSound = document.getElementById('fireSound');
-  const bgmSound = document.getElementById('bgmSound');
+      clearInterval(shuffleInterval);
+      shuffleInterval = null;
+      isShuffling = false;
 
-  // 音量設定
-  if (fireSound) fireSound.volume = 0.05;
-  if (bgmSound) bgmSound.volume = 0.05;
-  if (startSound) startSound.volume = 0.1;
-  if (stopSound) startSound.volume = 0.1;
+      if (stopSound) {
+        stopSound.currentTime = 0;
+        stopSound.play().catch(() => {});
+      }
 
-  // 最初のボタン操作で再生（自動再生制限対策）
-  const playAudio = () => {
-    fireSound?.play().catch(() => {});
-    bgmSound?.play().catch(() => {});
-    document.removeEventListener('click', playAudio); // 一度だけ
-  };
+      // 表示中の4パーク名を取得して結果欄へ
+      const perkNames = Array.from(document.querySelectorAll(".perk-name"))
+        .map(el => el.textContent.trim())
+        .filter(Boolean);
 
-  document.addEventListener('click', playAudio);
-});
+      document.getElementById("resultText").value = perkNames.join("、");
+    }
+
+    // ★コピー関数
+    function copyResult() {
+      const input = document.getElementById("resultText");
+      const text = input.value.trim();
+      if (!text) return;
+
+      // 新しめブラウザ優先
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).catch(() => {});
+        return;
+      }
+
+      // 互換用
+      input.select();
+      input.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      input.setSelectionRange(0, 0);
+      input.blur();
+    }
+
+    // ===== 音量 + 自動再生制限対策 =====
+    window.addEventListener('DOMContentLoaded', () => {
+      if (fireSound)  fireSound.volume = 0.05;
+      if (bgmSound)   bgmSound.volume  = 0.05;
+      if (startSound) startSound.volume = 0.1;
+      if (stopSound)  stopSound.volume  = 0.1;
+
+      // 最初のユーザー操作で再生
+      const playAudio = () => {
+        fireSound?.play().catch(() => {});
+        bgmSound?.play().catch(() => {});
+        document.removeEventListener('click', playAudio);
+      };
+      document.addEventListener('click', playAudio);
+    });
   </script>
-
 </body>
 </html>
