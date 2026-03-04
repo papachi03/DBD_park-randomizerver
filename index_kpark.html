@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>DBD パークランダマイザ_Killer</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 40px;
+      background-image: url("background.png");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: #fff;
+      text-shadow: 1px 1px 2px #000;
+    }
+    .perk-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+    .perk {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 10px;
+      width: 200px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+      background-color: rgba(0, 0, 0, 0.6);
+      color: #fff;
+    }
+    .perk-name {
+      font-weight: bold;
+      margin: 10px 0 5px;
+    }
+    .perk-desc {
+      font-size: 14px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      margin: 10px;
+      cursor: pointer;
+    }
+
+    /* 結果欄 */
+    .result-area {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #resultText {
+      width: min(720px, 90vw);
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.4);
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      outline: none;
+    }
+  
+    /* キラー表示 */
+    .killer-area{
+      margin: 18px auto 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+    #killerIcon{
+      width: 188px;
+      height: 236px;
+      object-fit: contain;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.55);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .killer-name{
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-shadow: 1px 1px 2px #000;
+      background: rgba(0,0,0,0.35);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+  </style>
+</head>
+
+<body>
+<!-- 焚き火の音 -->
+<audio id="fireSound" src="fire.mp3" loop></audio>
+
+<!-- ホラーBGM -->
+<audio id="bgmSound" src="horror_bgm.mp3" loop></audio>
+
+<!-- スタート音 -->
+<audio id="startSound" src="SE1.mp3"></audio>
+
+<!-- ストップ音 -->
+<audio id="stopSound" src="SE2.mp3"></audio>  <div>
+
+<h1>DBD Park Randomizer ver1.0(killer)</h1>
+
+    <button onclick="startShuffle()">スタート</button>
+    <button onclick="stopShuffle()">ストップ</button>
+  </div>
+
+  <div class="killer-area">
+    <img id="killerIcon" src="" alt="killer icon">
+    <div id="killerName" class="killer-name"></div>
+  </div>
+
+ <div class="perk-container" id="perkContainer"></div>
+<div class="result-area">
+  <input id="resultText" type="text" readonly placeholder="ストップするとここに4つのパーク名が出ます">
+  <button onclick="copyResult()">コピー</button>
+</div>
+
+  <script>
+     const fireSound  = document.getElementById('fireSound');
+     const bgmSound   = document.getElementById('bgmSound');
+     const startSound = document.getElementById('startSound');
+     const stopSound  = document.getElementById('stopSound');
+
+    // ------------------------------
+    // キラー（ポートレート）ランダム
+    // フォルダ: killer/ に画像を置くこと
+    // ------------------------------
+    const killerFiles = [
+      "K01_TheTrapper_Portrait.png",
+      "K02_TheWraith_Portrait.png",
+      "K03_TheHillbilly_Portrait.png",
+      "K04_TheNurse_Portrait.png",
+      "K05_TheHag_Portrait.png",
+      "K06_TheShape_Portrait.png",
+      "K07_TheDoctor_Portrait.png",
+      "K08_TheHuntress_Portrait.png",
+      "K09_TheCannibal_Portrait.png",
+      "K10_TheNightmare_Portrait.png",
+      "K11_ThePig_Portrait.png",
+      "K12_TheClown_Portrait.png",
+      "K13_TheSpirit_Portrait.png",
+      "K14_TheLegion_Portrait.png",
+      "K15_ThePlague_Portrait.png",
+      "K16_TheGhostface_Portrait.png",
+      "K17_TheDemogorgon_Portrait.png",
+      "K18_TheOni_Portrait.png",
+      "K19_TheDeathslinger_Portrait.png",
+      "K20_TheExecutioner_Portrait.png",
+      "K21_TheBlight_Portrait.png",
+      "K22_TheTwins_Portrait.png",
+      "K23_TheTrickster_Portrait.png",
+      "K24_TheNemesis_Portrait.png",
+      "K25_TheCenobite_Portrait.png",
+      "K26_TheArtist_Portrait.png",
+      "K27_TheOnryo_Portrait.png",
+      "K28_TheDredge_Portrait.png",
+      "K29_TheMasterMind_Portrait.png",
+      "K30_TheKnight_Portrait.png",
+      "K31_TheSkullMerchant_Portrait.png",
+      "K32_TheSingularity_Portrait.png",
+      "K33_TheXenomorph_Portrait.png",
+      "K34_TheYerkes_Portrait.png",
+      "K35_TheUnknown_Portrait.png",
+      "K36_TheLich_Portrait.png",
+      "K37_TheDracula_Portrait.png",
+      "K38_TheHoundmaster_Portrait.png",
+      "T_UI_K41_TheKrasue_Portrait.png",
+      "T_UI_K42_TheFirst_Portrait.png"
+    ];
+
+    // ざっくり日本語名（足りない分は英語が出る）
+    const killerNameJP = {
+      "TheTrapper": "トラッパー",
+      "TheWraith": "レイス",
+      "TheHillbilly": "ヒルビリー",
+      "TheNurse": "ナース",
+      "TheHag": "ハグ",
+      "TheShape": "シェイプ",
+      "TheDoctor": "ドクター",
+      "TheHuntress": "ハントレス",
+      "TheCannibal": "カニバル",
+      "TheNightmare": "ナイトメア",
+      "ThePig": "ピッグ",
+      "TheClown": "クラウン",
+      "TheSpirit": "スピリット",
+      "TheLegion": "リージョン",
+      "ThePlague": "プレイグ",
+      "TheGhostface": "ゴーストフェイス",
+      "TheDemogorgon": "デモゴルゴン",
+      "TheOni": "鬼",
+      "TheDeathslinger": "デススリンガー",
+      "TheExecutioner": "エクセキューショナー",
+      "TheBlight": "ブライト",
+      "TheTwins": "ツインズ",
+      "TheTrickster": "トリックスター",
+      "TheNemesis": "ネメシス",
+      "TheCenobite": "セノバイト",
+      "TheArtist": "アーティスト",
+      "TheOnryo": "怨霊",
+      "TheDredge": "ドレッジ",
+      "TheMasterMind": "ウェスカー",
+      "TheKnight": "ナイト",
+      "TheSkullMerchant": "スカルマーチャント",
+      "TheSingularity": "シンギュラリティ",
+      "TheXenomorph": "ゼノモーフ",
+      "TheYerkes": "チャッキー",
+      "TheUnknown": "アンノウン",
+      "TheLich": "リッチ",
+      "TheDracula": "ドラキュラ",
+      "TheHoundmaster": "ハウンドマスター",
+      "TheKrasue": "ガスー",
+      "TheFirst": "ザ・ファースト"
+    };
+
+    let currentKiller = null;
+
+    function parseKillerCode(file){
+      // "K01_TheTrapper_Portrait.png" -> "TheTrapper"
+      // "T_UI_K41_TheKrasue_Portrait.png" -> "TheKrasue"
+      return file
+        .replace(/_Portrait\.png$/,"")
+        .replace(/^T_UI_K\d+_/,"")
+        .replace(/^K\d+_/,"");
+    }
+
+    function pickRandomKiller(){
+      const file = killerFiles[Math.floor(Math.random()*killerFiles.length)];
+      const code = parseKillerCode(file);
+      const name = killerNameJP[code] ?? code; // fallback英語
+      return { file, code, name, icon: "killer/" + file };
+    }
+
+
+    // 任意のサバイバーパークの例（もっと増やしてOK）
+    const allParks = [     
+{
+  name: "不安の元凶",
+  description: "脅威範囲内にいる生存者は、修理または治療スキルチェック発生率が10%上昇する。発生したスキルチェックの成功範囲が(40・50・60)%減少する。",
+  icon: "Perks/iconPerks_UnnervingPresence.png"
+},
+{
+  name: "野蛮な力",
+  description: "倒されたパレット、破壊可能な壁、発電機を破壊する速度が(10・15・20)%上昇する。",
+  icon: "Perks/iconPerks_BrutalStrength.png"
+},
+{
+  name: "興奮",
+  description: "生存者を運んでいる間の移動速度が(6・12・18)%上昇する。生存者を運んでいる間、脅威範囲が12メートル増加する。",
+  icon: "Perks/iconPerks_Agitation.png"
+},
+{
+  name: "捕食者",
+  description: "生存者が追跡から逃れると、その生存者のオーラが4秒間表示される。このパークには(60・50・40)秒間のクールダウンがある。",
+  icon: "Perks/iconPerks_Predator.png"
+},
+{
+  name: "血の追跡者",
+  description: "新鮮な血痕が、通常よりかなり識別できるようになり、追跡可能時間が(2・3・4)秒増加する。",
+  icon: "Perks/iconPerks_Bloodhound.png"
+},
+{
+  name: "闇より出でし者",
+  description: "何らかの手段で目眩まし状態にさせられると、(6・8・10)%の迅速を10秒間得る。",
+  icon: "Perks/iconPerks_Shadowborn.png"
+},
+{
+  name: "不屈",
+  description: "パレットで怯む時間が(40・45・50)%減少する。生存者を担いでいる間は効果がない。",
+  icon: "Perks/iconPerks_Enduring.png"
+},
+{
+  name: "光より出でし者",
+  description: "懐中電灯や爆竹、スタングレネード、地雷爆破による目眩ましに影響を受けなくなる。あなたに 目眩まし を試みる生存者のオーラが(6・8・10)秒間視えるようになる。",
+  icon: "Perks/iconPerks_Lightborn.png"
+},
+{
+  name: "ガラクタいじり",
+  description: "発電機の修理が70%まで完了すると大きな通知音が発生し、(12・14・16)秒間、 探知不可 のステータス効果を得る。この効果は発電機1台につき一度のみ発動可能。",
+  icon: "Perks/iconPerks_Tinkerer.png"
+},
+{
+  name: "喘鳴",
+  description: "苦痛にあえぐ生存者の呼吸音が(30・40・50)%大きくなり、通常の呼吸音が(15・20・25)%大きくなる。",
+  icon: "Perks/iconPerks_Stridor.png"
+},
+{
+  name: "死恐怖症",
+  description: "生存者が負傷または瀕死状態に陥るか、フックに吊るされるたび、生存者全員の修理・フック破壊・トーテム浄化速度が(1・1.5・2) %低下する。負傷または瀕死状態に陥ったか、フックに吊るされた生存者が4人いる場合、修理・フック破壊・トーテム浄化の速度が12%追加される。",
+  icon: "Perks/iconPerks_Thatanophobia.png"
+},
+{
+  name: "看護婦の使命",
+  description: "(28・30・32)メートル以内にいる治療中、または治療を受けている負傷した生存者のオーラが視える。",
+  icon: "Perks/iconPerks_ANursesCalling.png"
+},
+{
+  name: "第三の封印",
+  description: "オーラ可視能力を妨げる呪い。呪いのトーテムが活動している間、通常攻撃または特殊攻撃が命中した生存者に 目眩まし のステータス効果を付与する。呪いの効果は最後に攻撃した(2・3・4)人に有効。 呪いの効果は、紐付けられた呪いのトーテムが残っているかぎり持続する。",
+  icon: "Perks/DLC3/iconPerks_TheThirdSeal.png"
+},
+{
+  name: "破滅",
+  description: "全ての発電機が呪術：破滅の影響を受ける。生存者による修理が行われていない間、即座に発電機の修理進行が通常の後退速度の(100・125・150)%で自動的に後退する。",
+  icon: "Perks/DLC3/iconPerks_Ruin.png"
+},
+{
+  name: "貪られる希望",
+  description: "24メートル以上離れている生存者がフックから救助されると、「貪られる希望」に1トークンが付与される。 2トークン：生存者を吊るすと10秒後に10秒間(3・4・5)%の 迅速 効果を受ける 3トークン：生存者が 無防備 効果に苦しむ 5トークン：直接生存者を仕留められるようになる 呪いの効果は、紐付けられた呪いのトーテムが残っているかぎり持続する。 圧倒的存在感 妨害・デバフ",
+  icon: "Perks/DLC3/iconPerks_DevourHope.png"
+},
+{
+  name: "圧倒的存在感",
+  description: "自分の32メートル以内で生存者がアイテムを使用し始めると、その生存者が 疲労 を15秒間得る。 自分の32メートル以内で生存者が 疲労 を得ると、最も近くにいる 疲労 状態の生存者のオーラが（2・3・4）秒間視える。 このパークには25秒間のクールダウンがある。",
+  icon: "Perks/DLC4/iconPerks_OverwhelmingPresence.png"
+},
+{
+  name: "観察＆虐待",
+  description: "生存者を追跡中、脅威範囲が（5・10・15）%増加する。追跡中以外は脅威範囲が（15・20・25）%減少する。",
+  icon: "Perks/DLC4/iconPerks_MonitorAndAbuse.png"
+},
+{
+  name: "オーバーチャージ",
+  description: "発電機破壊アクションで発電機を過充電させる。次にその発電機に接触した生存者は難しいスキルチェックに直面する。スキルチェックが失敗した場合、発電機の進行度が(2・3・4)%追加で減少する。 スキルチェックが成功した場合、発電機は進行しないが、発電機の爆発は回避される。 オーバーチャージが適用された発電機は、30秒間修理進行度の後退速度が通常の85%から130%に上昇する。",
+  icon: "Perks/DLC4/iconPerks_GeneratorOvercharge.png"
+},
+{
+  name: "最後のお楽しみ",
+  description: "1人の生存者に執着する。 オブセッション以外の生存者に通常攻撃を命中させる度にトークンを1個獲得する。1トークンにつき、通常攻撃成功後のクールダウンが4%ずつ減少する。トークンは最大(6・7・8)個まで獲得できる。 オブセッションが通常攻撃または特殊攻撃を命中させると2個のトークンを失う。オブセッションが処刑されるか死亡すると、トークンを獲得できない。",
+  icon: "Perks/DLC2/iconPerks_SaveTheBestForLast.png"
+},
+{
+  name: "弄ばれる獲物",
+  description: "1人の生存者に執着する。オブセッション状態の生存者を追いかけて取り逃がす度に、トークンを獲得する。最大トークン数は3。 1トークンにつき移動速度が(3・4・5)%ずつ上昇する。 通常攻撃または特殊攻撃を実行するたびに1トークンを消費する。",
+  icon: "Perks/DLC2/iconPerks_PlayWithYourFood.png"
+},
+{
+  name: "消えゆく灯",
+  description: "1人の生存者に執着する。オブセッション状態の生存者は、フック救助の速度と他の生存者の治療速度が33%上昇する。オブセッション状態でない生存者をフックに吊るした時に、オブセッション状態の生存者がいればトークンを1つ獲得する。 オブセッション状態の生存者がいる場合、オブセッション状態でない生存者は修理、治療、破壊のアクション速度が1トークンごとに(2・2.5・3)%の低下する。",
+  icon: "Perks/DLC2/iconPerks_DyingLight.png"
+},
+{
+  name: "猛獣",
+  description: "血の渇望が発動すると、 探知不可 のステータス効果を(30・35・40)秒間得る。",
+  icon: "Perks/DLC5/iconPerks_BeastOfPrey.png"
+},
+{
+  name: "縄張り意識",
+  description: "あなたが地下室の入り口から24メートル以上離れているとき、地下室に入った生存者のオーラが6秒間視えるようになる。縄張り意識は45秒間のクールタイムがある。",
+  icon: "Perks/DLC5/iconPerks_TerritorialImperative.png"
+},
+{
+  name: "女狩人の子守唄",
+  description: "生存者が治療中または修理中のスキルチェックに失敗したとき、進行度に(2・4・6)%の後退ペナルティを受ける。 生存者が吊るされる度に、女狩人の子守唄は力を増す。治療中または修理中のスキルチェック警告音に以下の影響をおよぼす。 1〜4トークン:スキルチェックとスキルチェック前の警告音の間が短くなる 5トークン:スキルチェック前の警告音が無くなる 呪いの効果は、紐付けられた呪いのトーテムが残っている限り持続する。",
+  icon: "Perks/DLC5/iconPerks_HuntressLullaby.png"
+},
+{
+  name: "ノックアウト",
+  description: "生存者がパレットを倒したとき、その生存者が6秒以内にそこから6メートル以上離れると5%の 妨害 効果を(3・4・5)秒得る。",
+  icon: "Perks/Cannibal/iconPerks_KnockOut.png"
+},
+{
+  name: "バーベキュー＆チリ",
+  description: "生存者をフックに吊るした後5秒間、フックから(60・50・40)メートル以上離れた全ての生存者のオーラを視ることができる。 フランクリンの悲劇 妨害・デバフ オーラ",
+  icon: "Perks/Cannibal/iconPerks_BBQAndChili.png"
+},
+{
+  name: "フランクリンの悲劇",
+  description: "あなたの通常攻撃を受けた生存者は衝撃でアイテムを落とす。 64メートル以内の地面にあるアイテムが白いオーラで表示される。",
+  icon: "Perks/Cannibal/iconPerks_FranklinsLoss.png"
+},
+{
+  name: "ファイヤー・アップ",
+  description: "生存者が発電機の修理を完了するたびに、このパークは強化される。 ・各発電機の修理が完了すると(4・5・6)%の重複可能な強化効果を得て、儀式の残り時間中は拾う、落とす、乗り越え、発電機破壊、パレットと破壊可能な壁の破壊速度が上昇する。",
+  icon: "Perks/England/iconPerks_FireUp.png"
+},
+{
+  name: "リメンバー・ミー",
+  description: "オブセッション状態の生存者がダメージを受けるたびにトークンが1個貯まる（最大5個まで）。 トークン1個につき、他の生存者が脱出ゲートを開放する速度が30％低下する。",
+  icon: "Perks/England/iconPerks_RememberMe.png"
+},
+{
+  name: "血の番人",
+  description: "脱出ゲートが開放されることで発動する。出口エリア内にいる生存者のオーラを視ることができる。1マッチに1回だけ、血の番人が発動中に生存者をフックに吊るすと、エンティティを召喚して全ての出口を(30・40・60)秒間封鎖する。全ての生存者に対して有効。",
+  icon: "Perks/England/iconPerks_BloodWarden.png"
+},
+{
+  name: "処刑人の妙技",
+  description: "生存者がフックの破壊工作を開始すると通知を受け取る。 生存者を運んでいる間、悶絶のフックから(12・14・16)メートル以内にいる生存者のオーラが視える",
+  icon: "Perks/Finland/iconPerks_HangmansTrick.png"
+},
+{
+  name: "監視",
+  description: "修理進行度が後退しているすべての発電機が白いオーラで強調される。発電機の修理進行度の後退が食い止められると、(8・12・16)秒間黄色いオーラで強調される。発電機の修理音が聞こえる範囲が8メートル広がる。",
+  icon: "Perks/Finland/iconPerks_Surveillance.png"
+},
+{
+  name: "選択は君次第だ",
+  description: "生存者があなたから32メートル以上離れたフックに吊られた仲間を救助すると、選択は君次第だが発動して救助者が叫び、(40・50・60)秒間 無防備 のステータス効果を受ける。選択は君次第だは(40・50・60)秒間のクールダウンがある。",
+  icon: "Perks/Finland/iconPerks_MakeYourChoice.png"
+},
+{
+  name: "まやかし",
+  description: "障害物を乗り越える速度が(5・10・15)%増加する。乗り越えを行うと、エンティティがその場所を(8・12・16)秒間封鎖する。同時に封鎖できる場所は1ヶ所のみ。封鎖は生存者のみ有効。パレットには効果が適用されない。",
+  icon: "Perks/Guam/iconPerks_Bamboozle.png"
+},
+{
+  name: "ピエロ恐怖症",
+  description: "脅威範囲内の生存者による治療速度が(30・40・50)%低下し、スキルチェックの速度が50%上昇する。",
+  icon: "Perks/Guam/iconPerks_Coulrophobia.png"
+},
+{
+  name: "イタチが飛び出した",
+  description: "生存者を吊るすと、次に破壊する発電機の修理進行度が現状から即座に20%減少する。発電機破壊アクションの後、発電機の進行度は通常通り減少していく。 イタチが飛び出したは、生存者が吊るされた後(35・40・45) 秒間有効。",
+  icon: "Perks/Guam/iconPerks_PopGoesTheWeasel.png"
+},
+{
+  name: "怨霊の怒り",
+  description: "パレットを(4・3・2)枚破壊すると、次にパレットで怯んだ時にエンティティによって即座にパレットが破壊される。怯み効果は通常通り受ける。",
+  icon: "Perks/Haiti/iconPerks_SpiritFury.png"
+},
+{
+  name: "霊障の地",
+  description: "罠が封じられた呪いのトーテムが2個生成される。生存者が罠の呪いのトーテムのいずれかを浄化すると、すべての生存者が(40・50・60)秒間、 無防備 状態に苦しむ。残りの罠の呪いのトーテムは即座に無力なトーテムになる。",
+  icon: "Perks/Haiti/iconPerks_HauntedGround.png"
+},
+{
+  name: "怨恨",
+  description: "1人の生存者に執着する。 発電機の修理が完了するたびに、オブセッションはあなたのオーラを(5・4・3)秒間視ることができる。発電機の修理が完了するたびに、すべての生存者の位置を3秒間探知できる。 脱出ゲートが通電すると、オブセッション対象者は 無防備 状態になって、殺害可能な状態になる。",
+  icon: "Perks/Haiti/iconPerks_Hatred.png"
+},
+{
+  name: "不協和音",
+  description: "2人以上の生存者が修理する(64・96・128)メートル以内の発電機が黄色のオーラで強調される。初めて強調された発電機は不協和音によって大きな音の通知が発動する。 発電機が範囲外になるか、2人以上の生存者によって修理されなくなった後もオーラが4秒間持続する。",
+  icon: "Perks/Kenya/iconPerks_Discordance.png"
+},
+{
+  name: "狂気の根性",
+  description: "生存者を運んでいる間、通常攻撃の失敗時のクールダウンがなくなり、通常攻撃の成功時、運んでいる生存者のもがきゲージが(2・3・4)秒間停止する。",
+  icon: "Perks/Kenya/iconPerks_MadGrit.png"
+},
+{
+  name: "アイアンメイデン",
+  description: "ロッカーを開ける速度が(30・40・50)%上昇する。 ロッカーから出た生存者は、30秒間 無防備 状態になり、4秒間位置が表示される。",
+  icon: "Perks/Kenya/iconPerks_IronMaiden.png"
+},
+{
+  name: "堕落の介入",
+  description: "儀式開始時に、一番離れた位置にある発電機3台がエンティティによって(80・100・120)秒間ブロックされる。 その間、ブロックされた発電機は修理ができない。ブロック中の発電機は白いオーラでハイライトされる。 堕落の介入はいずれかの生存者が瀕死状態に陥ると解除される。",
+  icon: "Perks/Mali/iconPerks_CorruptIntervention.png"
+},
+{
+  name: "伝播する怖気",
+  description: "生存者を瀕死状態にすると、脅威範囲内の生存者全員が叫び声をあげ、(4・5・6)秒間位置が通知される。",
+  icon: "Perks/Mali/iconPerks_InfectiousFright.png"
+},
+{
+  name: "闇の信仰心",
+  description: "1人の生存者に執着する。オブセッションが1段階負傷すると、(35・40・45)秒間、脅威範囲がオブセッションに移動して、範囲が40メートルになる。 効果が続く限り 探知不可 のステータス効果を得る。 脅威範囲が移動した生存者は、他の目的で「脅威範囲内にいる」とみなされる。",
+  icon: "Perks/Mali/iconPerks_DarkDevotion.png"
+},
+{
+  name: "地獄耳",
+  description: "自分から48メートル以内でせっかちな行動を行った生存者のオーラが8秒間見える。地獄耳は(60・45・30)秒ごとに1回のみ発動可能。",
+  icon: "Perks/Oman/iconPerks_ImAllEars.png"
+},
+{
+  name: "戦慄",
+  description: "生存者を担いだ後、生存者によって修理中でない発電機すべてがエンティティによりブロックされ、次の16秒間修理不能になる。ブロックされている発電機は白いオーラでハイライトされる。戦慄は(40・35・30)秒ごとに発動可能。",
+  icon: "Perks/Oman/iconPerks_ThrillingTremors.png"
+},
+{
+  name: "隠密の追跡",
+  description: "1人の生存者に執着する。オブセッション状態の生存者をフックに吊るすと、探知不可ステータス効果と10%の迅速ステータス効果を(14・16・18)秒間得る。 オブセッション状態の生存者をフックから救助した生存者は、オブセッション状態になる。 複数の生存者が同時にオブセッション状態になることはない。",
+  icon: "Perks/Oman/iconPerks_FurtiveChase.png"
+},
+{
+  name: "サージ",
+  description: "通常攻撃で生存者を瀕死状態にすると、32メートル以内の範囲にある全ての発電機が即座に爆発し、修理の進行度が減少し始める。サージの影響を受けた発電機は進行度が即座に(6・7・8)%減少する。 マインドブレーカー (不安を煽る者) 妨害・デバフ チェイス",
+  icon: "Perks/Qatar/iconPerks_Surge.png"
+},
+{
+  name: "マインドブレーカー",
+  description: "発電機を修理中の生存者は目眩ましと 疲労 のステータス効果を受ける。 生存者が発電機を修理している間、すでに起動中の疲労のタイマーはすべて停止する。修理を終えた生存者はその後(3・4・5) 秒間 目眩まし と疲労ステータス効果を受ける。",
+  icon: "Perks/Qatar/iconPerks_MindBreaker.png"
+},
+{
+  name: "閉所恐怖症",
+  description: "発電機の修理が完了するたびに、全ての窓と乗り越え可能な地点が(20・25・30)秒間封鎖され、すべての生存者が乗り越え不可になる。 封鎖中、あなたには無慈悲の極地で封鎖された場所のオーラが見える。",
+  icon: "Perks/Qatar/iconPerks_CruelConfinement.png"
+},
+{
+  name: "残心の戦術",
+  description: "32メートル以内のパレットと乗り越え障害物のオーラを表示する。パレットを倒した生存者のオーラが自分に(3・4・5)秒間表示される。 血の共鳴 妨害・デバフ チェイス",
+  icon: "Perks/Sweden/iconPerks_ZanshinTactics.png"
+},
+{
+  name: "血の共鳴",
+  description: "1人の生存者をフックに吊るすと、その他の負傷した生存者全員が 出血 と 疲労 のステータス効果に30秒間苦しむ。",
+  icon: "Perks/Sweden/iconPerks_BloodEcho.png"
+},
+{
+  name: "天誅",
+  description: "パレットやロッカーを使って目くらましや怯ませてくる生存者はあなたのオブセッションとなる。新たな生存者がオブセッションになるときは毎回「 無感覚(忘却) 」状態となり、その効果が(40・50・60)秒継続する。また生存者のオーラが8秒間視えるようになる。 殺人鬼のオブセッションになる生存者は1回に1人のみ。",
+  icon: "Perks/Sweden/iconPerks_Nemesis.png"
+},
+{
+  name: "囁き",
+  description: "生存者から(48・40・32)メートル以内にいると、時々エンティティの囁きが聞こえるようになる。", 
+  icon: "Perks/iconPerks_Whispers.png"
+},
+{
+  name: "異形の祭壇",
+  description: "悶絶のフックに吊られた生存者は、殺人鬼が周囲24メートル以内にいないとき、エンティティの進行速度が(10・15・20)%上昇する。地下室の固有フックが悶絶のフックの効果を得る。",
+  icon: "Perks/iconPerks_MonstrousShrine.png"
+},
+{
+  name: "苦悶の根源",
+  description: "脅威範囲が(20・25・30)%増加する。", 
+  icon: "Perks/iconPerks_Distressing.png"
+},
+{
+  name: "憎悪の囁き",
+  description: "発電機の修理が完了する度、修理完了した発電機の16メートル以内にいる生存者が5秒間表示される。最後の発電機の修理が完了すると、全ての生存者のオーラが(5・7・10)秒間表示される。",
+  icon: "Perks/iconPerks_BitterMurmur.png"
+},
+{
+  name: "忍び寄る者",
+  description: "自分のオーラが生存者に視える間、その生存者のオーラが自分に視える。 （40・35・30）秒ごとに、最も追跡時間の短い生存者に自分のオーラが3秒間表示される。",
+  icon: "Perks/iconPerks_Deerstalker.png"
+},
+{
+  name: "誰も死から逃れられない",
+  description: "脱出ゲートが通電したとき、もし無力なトーテムがマップ上に残っていれば、この呪いが適用される。この呪いが発動中 生存者が 無防備 のステータス効果に苦しむ 移動速度が(2・3・4)%上昇する 呪いの効果が生存者に明かされると、その呪いのトーテムのオーラが4メートルの範囲で生存者に表示されるようになる。このオーラ可視範囲は、30秒で徐々に24メートル範囲まで拡大する。 呪いの効果は、紐付けられた呪いのトーテムが残っているかぎり持続する。",
+  icon: "Perks/iconPerks_NoOneEscapesDeath.png"
+},
+{
+  name: "狩りの興奮",
+  description: "マップ上に残っている無力、および呪いのトーテム1つ毎にトークンを得る。 生存者によるトーテムの浄化と清めの速度が1トークンにつき(8・10・12)%減少する 呪いの効果は、紐付けられた呪いのトーテムが残っているかぎり持続する。",
+  icon: "Perks/DLC3/iconPerks_ThrillOfTheHunt.png"
+},
+{
+  name: "狡猾",
+  description: "(3・2・1)秒静止すると、再度動くかアクションを行うまで 探知不可 のステータス効果を得る。",
+  icon: "Perks/iconPerks_Insidious.png"
+},
+{
+  name: "鋼の握力",
+  description: "生存者のもがく効果が75%減少する。抜け出すために必要な時間が(4・8・12)%増加する。 ",
+  icon: "Perks/iconPerks_IronGrasp.png"
+},
+{
+  name: "ずさんな肉屋",
+  description: "通常攻撃で負傷した生存者に、90秒間 出血 と 重傷 のステータス効果を与える。 出血によって治療の進行度が後退する速度が(15・20・25)％上昇する。 ",
+  icon: "Perks/iconPerks_SloppyButcher.png"
+},
+{
+  name: "影の密偵",
+  description: "(20・28・36)メートル以内にいるカラスが鳴くと、100%の確率で目で見て分かるサインを送ってくる。影の中の密偵には5秒間のクールダウンがある。 ",
+  icon: "Perks/iconPerks_SpiesFromTheShadows.png"
+},
+{
+  name: "無慈悲",
+  description: "攻撃失敗時のクールダウンが(20・25・30)%減少する。",
+  icon: "Perks/iconPerks_Unrelenting.png"
+},
+{
+  name: "変速機",
+  description: "何らかの手段で生存者が1段階負傷すると変速機が30秒間発動する。 変速機が発動中に生存者が修理のスキルチェックでグッドを出すと、その生存者のオーラが(6・7・8)秒視える。",
+  icon: "Perks/Ukraine/iconPerks_GearHead.png"
+},
+{
+  name: "死人のスイッチ",
+  description: "生存者をフックに吊るしたとき、死人のスイッチが発動する。そのあと最初に生存者が発電機の修理を中断した際、発電機はエンティティによって(25・30・35)秒間ブロックされる。 ブロックされた発電機は白いオーラで強調表示される。 死人のスイッチは発電機をブロックしている間は再び発動しない。",
+  icon: "Perks/Ukraine/iconPerks_DeadManSwitch.png"
+},
+{
+  name: "報復",
+  description: "無力なトーテムか呪いのトーテムにアクションを行った生存者は、(40・50・60)秒間 無感覚(忘却) のステータス効果に苦しむ。これを含む呪いのトーテムが浄化されると、すべての生存者のオーラが20秒間視えるようになる。",
+  icon: "Perks/Ukraine/iconPerks_HexRetribution.png"
+},
+{
+  name: "強制苦行",
+  description: "味方の代わりに攻撃を受けた生存者は(60・70・80)秒間、 衰弱 のステータス効果に苦しめられる。",
+  icon: "Perks/Wales/iconPerks_ForcedPenance.png"
+},
+{
+  name: "煩悶のトレイル",
+  description: "発電機を破壊すると、発電機の修理進行度の後退が止まるまで 探知不可 になる。この間、その発電機の黄色いオーラが生存者に視えるようになる。 この効果は(60・45・30)秒ごとに1回のみ発動する。",
+  icon: "Perks/Wales/iconPerks_TrailOfTorment.png"
+},
+{
+  name: "デスバウンド",
+  description: "生存者が別の生存者を回復させると、叫び声を上げてデスバウンドが発動する。治療を行った生存者が、治療した生存者から(12・8・4)メートル以上離れると、 無感覚(忘却) のステータス効果に苦しむ。これは治療を行った者が1段階負傷するまで続く。",
+  icon: "Perks/Wales/iconPerks_Deathbound.png"
+},
+{
+  name: "ドラゴンの掌握",
+  description: "発電機を破壊した後の30秒間で最初にその発電機にアクションを行った生存者は叫び声を上げ、4秒間位置が判明し、60秒間 無防備 のステータス効果を受ける。 ドラゴンの掌握には(60・45・30)秒間のクールダウンが発生する。",
+  icon: "Perks/Yemen/iconPerks_DragonsGrip.png"
+},
+{
+  name: "血の恩恵",
+  description: "生存者を負傷させると、その生存者の(24・28・32)メートル以内にあるパレットが15秒間エンティティによって固定される。固定されたパレットを倒すことはできない。 呪いの効果は、紐付けられた呪いのトーテムが残っている限り持続する。",
+  icon: "Perks/Yemen/iconPerks_HexBloodFavor.png"
+},
+{
+  name: "不死",
+  description: "呪術：不死の発動中、いずれかの無力のトーテムの(2・3・4)メートル以内にいる生存者のオーラが視える。 それとは別の呪いのトーテムを浄化するとそのトーテムの呪いは呪術：不死のトーテムに移動し、呪術：不死の呪いを解く。移動された呪いにあったトークンも一緒に移動する。 溜め込み屋 チェスト 索敵",
+  icon: "Perks/Yemen/iconPerks_HexUndying.png"
+},
+{
+  name: "溜め込み屋",
+  description: "(32・48・64)m以内でチェストにアクションを行うかアイテムを拾った生存者の位置が判明する。儀式の開始時点で、マップ上に最大2個のチェストが追加で出現する。",
+  icon: "Perks/Aurora/iconPerks_Hoarder.png"
+},
+{
+  name: "迫害",
+  description: "発電機を破壊すると、他のランダムな発電機の進行度が最大4台まで後退し始める。これらの発電機が修理中の場合、修理をしている生存者に難しいスキルチェックが発生する。迫害は(45・40・35)秒のクールダウンがある。",
+  icon: "Perks/Aurora/iconPerks_Oppression.png"
+},
+{
+  name: "とどめの一撃",
+  description: "発電機の修理が完了するたびに、とどめの一撃の力が高まる。2トークンを獲得する（最大5トークンまで）。 1トークンを使用すると、次の突進攻撃の距離が (70・75・80)%増加する。",
+  icon: "Perks/Aurora/iconPerks_CoupDeGrace.png"
+},
+{
+  name: "スターに憧れて",
+  description: "生存者を担いでいる時、脅威範囲内にいるその他の生存者が 無防備 のステータスに苦しむ。 効果は脅威範囲外に出てからも(26・28・30)秒間続くほか、担いだ生存者をフックに吊るすか、解放した時に範囲内にいる生存者も同じ時間効果が続く。 スターに憧れては生存者が担がれていない状態になってから60秒間のクールダウンが発生する。",
+  icon: "Perks/Comet/iconPerks_Starstruck.png"
+},
+{
+  name: "クラウドコントロール",
+  description: "生存者が高速乗り越えを行うと、その乗り越え障害物がエンティティによってブロックされる。同時にブロックされるのは5箇所まで。",
+  icon: "Perks/Comet/iconPerks_HexCrowdControl.png"
+},
+{
+  name: "袋小路",
+  description: "生存者を初めてフックに吊るすたびに、袋小路の1トークンを獲得する。脱出ゲートが通電すると袋小路が発動する。 生存者が脱出ゲートのスイッチにアクションを起こすと大きな通知音が鳴る。その後、12秒間に加え、所持するトークン1つにつき(6・9・12)秒間、脱出ゲートの両方のスイッチがエンティティによってブロックされる。",
+  icon: "Perks/Comet/iconPerks_NoWayOut.png"
+},
+{
+  name: "死を呼ぶ追跡者",
+  description: "儀式開始時、生存者全員のオーラが(7・8・9)秒間視える。 生存者のオーラが一定時間表示されるたびに、その持続時間が2秒間増加する",
+  icon: "Perks/Eclipse/iconPerks_LethalPursuer.png"
+},
+{
+  name: "集団ヒステリー",
+  description: "無傷の生存者が何らかの手段で負傷すると、すべての生存者が(30・35・40)秒間 無感覚(忘却) のステータス効果に苦しむ。 集団ヒステリーは20秒間のクールタイムがある。",
+  icon: "Perks/Eclipse/iconPerks_Hysteria.png"
+},
+{
+  name: "イラプション",
+  description: "発電機を蹴ると、そのオーラが黄色で強調表示される。 生存者が瀕死状態になると強調表示されたすべての発電機が爆発し、修理進行度が10%失われ、後退し始める 爆発時に発電機を修理中だった生存者は叫び声を上げ、そのオーラが(8・10・12)秒間視える。 イラプションには30秒間のクールダウンが発生する。。",
+  icon: "Perks/Eclipse/iconPerks_Eruption.png"
+},
+{
+  name: "デッドロック",
+  description: "1台の発電機の修理が完了すると、最も修理の進んだ発電機がエンティティによって(15・20・25)秒間ブロックされる。この間、その発電機の白いオーラが視える。。",
+  icon: "Perks/Gemini/iconPerks_Deadlock.png"
+},
+{
+  name: "玩具",
+  description: "生存者を最初にフックに吊るした時、その生存者は 呪縛 状態に陥り、無力なトーテムで呪術：玩具が発動する。呪縛状態の生存者は呪術：玩具が浄化されるまで 無感覚(忘却) のステータス効果に苦しむ。 呪縛状態の生存者は呪術：玩具のトーテムから(24・20・16)メートル以内にいるとそのオーラが視える。最初の90秒間は、呪縛状態の生存者のみがトーテムの浄化を行える。。",
+  icon: "Perks/Gemini/iconPerks_HexPlaything.png"
+},
+{
+  name: "苦痛という名の賜り物",
+  description: "儀式開始時、最大4つのフックがランダムに悶絶のフックに変更される。これらのフックは白いオーラで表示される。 悶絶のフックから救出された生存者は、 出血 と 重傷 のステータス効果に90秒間苦しむ。その生存者は初回回復時、再び負傷するまで治療と修理の速度がそれぞれ (12・14・16)%減少する。",
+  icon: "Perks/Gemini/iconPerks_ScourgeHookGiftOfPain.png"
+},
+{
+  name: "不吉な包囲",
+  description: "生存者を初めてフックに吊るすたびに1トークンを獲得する。そのフックから16メートル離れた際、全ての発電機が(6・8・10)秒間ブロックされる。 4トークンに達すると、フックから16メートル離れた際、エンティティが全ての発電機を40秒間ブロックする。オブセッションのオーラが6秒間表示される。",
+  icon: "Perks/Ion/T_iconPerks_grimEmbrace.png"
+},
+{
+  name: "共鳴する苦痛",
+  description: "儀式開始時、最大4つのフックがランダムに悶絶のフックに変更される。これらのフックは白いオーラで表示される。 4個のトークンとともに儀式を始める（各生存者に1個使用可）。トークン未使用の生存者を悶絶のフックに吊るした際に残りの発電機がある場合、トークンを1個失い、修理進行度の最も高い発電機が爆発して進行度が即座に(10・15・20)%失われ、さらに後退し始める。 トークンがなくなると、共鳴する苦痛は儀式が終わるまで解除される。",
+  icon: "Perks/Ion/T_iconPerks_painResonance.png"
+},
+{
+  name: "ペンティメント",
+  description: "・あなたは浄化されたトーテムのオーラが視え、浄化されたトーテムをトーテムにつき1回、再燃できる。 ・再燃したトーテムがある間、生存者の治療と修理の速度が20%低下する。再燃したトーテムが増えるとトーテム1個あたり速度がさらに(1・2・3)%低下する。 ・5つの全トーテムが同時に再燃した状態になると、すべてのトーテムがエンティティによって永続的にブロックされる。 ・呪縛状態の生存者は、16メートル以内の再燃したトーテムのオーラが視える。",
+  icon: "Perks/Ion/T_iconPerks_hexPentimento.png"
+},
+{
+  name: "氾濫する憤怒",
+  description: "儀式開始時、4つのランダムなフックが悶絶のフックに置き換わる。悶絶のフックは白いオーラで表示される。 悶絶のフックから生存者が救助されると他の生存者全員のオーラが(5・6・7)秒間視えるようになる。",
+  icon: "Perks/Kepler/iconPerks_FloodOfRage.png"
+},
+{
+  name: "海の呼び声",
+  description: "発電機にダメージを与えると70秒間このパークが発動する。 発動した発電機は通常の(130・140・150)%の速度で修理進行度が後退し、その発電機のオーラが視えるようになる。 このパークが発動した発電機を修理する生存者がスキルチェックでグッドを達成するたびに、大きな通知音を受ける。",
+  icon: "Perks/Kepler/iconPerks_CallOfBrine.png"
+},
+{
+  name: "怒涛の嵐",
+  description: "発電機の修理進行度が90%に到達すると、その発電機を修理している生存者に連続でスキルチェックが発生する。スキルチェックに失敗するか修理を中断すると、その発電機は(16・18・20)秒間ブロックされる。 怒涛の嵐は各儀式で発電機1台につき1回のみ発動可能。",
+  icon: "Perks/Kepler/iconPerks_MercilessStorm.png"
+},
+{
+  name: "解体",
+  description: "手段にかかわらず生存者を負傷させると、その3秒後に解体が発動し、(12・16・20)秒間持続する。解体が発動中、脅威範囲内で生存者が高速乗り越えを行うと、乗り越えの直後にそのパレットがエンティティによって破壊され、解体が解除される。",
+  icon: "Perks/Meteor/iconPerks_Dissolution.png"
+},
+{
+  name: "露見する闇",
+  description: "ロッカーを調べた時、いずれかのロッカーから8メートル範囲内にいるすべての生存者のオーラが(6・7・8)秒間視えるようになる。 このパークには30秒のクールダウンが発生する。 腐敗の気配 妨害・デバフ",
+  icon: "Perks/Meteor/iconPerks_DarknessRevelated.png"
+},
+{
+  name: "腐敗の気配",
+  description: "あなたの脅威範囲で治療アクションを行った生存者は 目眩まし と 疲労 に苦しむ。 これらの効果は、何らかの手段で治療アクションが中断された後も(20・25・30)秒間持続する。",
+  icon: "Perks/Meteor/iconPerks_SepticTouch.png"
+},
+{
+  name: "打ち砕かれた希望",
+  description: "恵みのトーテムを鎮圧すると、トーテムが鎮火する代わりに破壊される。 この方法で恵みのトーテムを破壊すると、恵みのトーテムの範囲内にいる生存者全員のオーラが(6・7・8)秒間視えるようになる。",
+  icon: "Perks/Meteor/iconPerks_BoonDestroyer.png"
+},
+{
+  name: "人体の超越",
+  description: "12メートル以内で生存者が高速乗り越えを行うと、このパークが発動する。次に窓枠を乗り越えた際、乗り越え速度が(30・35・40)%上昇する。 このパークは窓枠を乗り越えると解除される。 このパークには25秒間のクールダウンが発生する。",
+  icon: "Perks/Orion/iconPerks_SuperiorAnatomy.png"
+},
+{
+  name: "知覚覚醒",
+  description: "生存者を運んでいる時、(16・18・20)メートル以内にいる他の生存者のオーラが視える。",
+  icon: "Perks/Orion/iconPerks_AwakenedAwarenesss.png"
+},
+{
+  name: "終末期",
+  description: "脱出ゲートが通電すると、このパークが発動する。終末期が発動中、負傷またはダウン状態、あるいはフックに吊られた生存者は、脱出ゲートが開放されるまで 衰弱 のステータス効果に苦しむ。衰弱状態は脱出ゲートが開いた後も(35・40・45)秒間続く。",
+  icon: "Perks/Orion/iconPerks_Terminus.png"
+},
+{
+  name: "隠れ場なし",
+  description: "発電機にダメージを与えると、(3・4・5)秒間、自分の位置から24メートル以内に立っている生存者全員のオーラが視える。",
+  icon: "Perks/Quantum/iconPerks_NowhereToHide.png"
+},
+{
+  name: "闇との対面",
+  description: "何らかの方法で生存者を負傷させると無力なトーテムが輝いて、呪いが発動する。 呪いの発動中は、自分の脅威範囲外にいる他の生存者全員が(35・30・25秒)ごとに叫び声をあげて、その位置とオーラが2秒間視える。 呪縛 状態の生存者が瀕死状態になった場合、または無傷状態を回復した場合、呪いのトーテムは輝きを失い、このパークは解除される。 呪いのトーテムが浄化されると、パークは永続的に無効化される。",
+  icon: "Perks/Quantum/iconPerks_HexFaceTheDarkness.png"
+},
+{
+  name: "ヒュブリス",
+  description: "生存者が自分を怯ませると、その生存者が(20・25・30)秒間、 無防備 ステータス効果に苦しむ。 ヒュブリスには20秒間のクールダウンがある。",
+  icon: "Perks/Quantum/iconPerks_Hubris.png"
+},
+{
+  name: "執拗な狩り",
+  description: "オブセッションを追跡中にこのパークが発動する。 発電機にダメージを与えたり、壁やパレットを破壊したりすると、7%の 迅速 ステータスを(8・9・10)秒間得る。 最も長く追跡した生存者に通常攻撃を命中させるとオブセッションとなる",
+  icon: "Perks/Saturn/iconPerks_GameAfoot.png"
+},
+{
+  name: "バシッ！",
+  description: "「バシッ！」は3個のトークンを所持して儀式を始める。 破壊可能な壁またはパレットを破壊した際、トークンを1個消費する。 36メートル以内の生存者が叫び声を上げ、その位置が(4・5・6)秒間表示される。 1人の生存者をフックに吊るすと、再びトークンを1個得る。",
+  icon: "Perks/Saturn/iconPerks_Thwack.png"
+},
+{
+  name: "骨抜きの作用",
+  description: "生存者がフックを外すアクションを行うと、その生存者の治療速度が60秒間、(20・25・30)%低下する。 遺伝的限界 妨害・デバフ",
+  icon: "Perks/Saturn/iconPerks_Leverage.png"
+},
+{
+  name: "遺伝的限界",
+  description: "生存者が1段階負傷すると、 疲労 ステータス効果に8秒間苦しむ。",
+  icon: "Perks/Umbra/IconPerks_GeneticLimits.png"
+},
+{
+  name: "躊躇の強制",
+  description: "何らかの手段で生存者が瀕死状態になると、その生存者の16メートル以内に立っている他の生存者全員が10秒間の妨害ステータスに苦しみ、移動速度が20％低下する。このパークには(40・35・30)秒のクールダウンがある。",
+  icon: "Perks/Umbra/IconPerks_ForcedHesitation.png"
+},
+{
+  name: "機械学習",
+  description: "発電機にダメージを与えると、その発電機が侵害状態になる。侵害状態になる発電機は一度に一台のみ。 侵害状態にある発電機の修理が完了すると、あなたは 探知不可 になり、8％の 迅速 効果を(40・50・60)秒間得る。",
+  icon: "Perks/Umbra/IconPerks_SelfAware.png"
+},
+{
+  name: "究極の武器",
+  description: "ロッカーを開けると、ロッカーの40メートル以内にいる全ての生存者が叫び声を上げてその位置を知らせ、30秒間目眩まし状態になる。このパークには(55・50・45)秒間のクールダウンがある。",
+  icon: "Perks/Wormhole/iconPerks_UltimateWeapon.png"
+},
+{
+  name: "素早い残虐行為",
+  description: "血の渇望を得なくなる。通常攻撃を生存者に命中させると、5%の迅速を(8・9・10)秒間得る。",
+  icon: "Perks/Wormhole/iconPerks_RapidBrutality.png"
+},
+{
+  name: "エイリアンの本能",
+  description: "生存者をフックに吊るすと、このパークが発動する。最も遠い場所にいる負傷した生存者のオーラが8秒間視え、その生存者が(40・50・60)秒間 無感覚(忘却) となる。",
+  icon: "Perks/Wormhole/iconPerks_AlienInstinct.png"
+},
+{
+  name: "二人遊び",
+  description: "生存者が殺人鬼を(4・3・2)回怯ませるか目眩ましすると、呪術：二人遊びに紐づけされた呪いのトーテムがまだない場合、無力なトーテムが呪いのトーテムとなる。 殺人鬼を怯ませるか目眩ましした生存者が、1.5秒間目眩まし状態となる。これは運ばれている生存者には影響しない。 呪いの効果は、紐付けられた呪いのトーテムが残っているかぎり持続する。",
+  icon: "Perks/Yerkes/iconPerks_twoCanPlay.png"
+},
+{
+  name: "死ぬまで親友",
+  description: "オブセッションでない生存者をフックに吊るすと、オブセッションが20秒間無防備となり、そのオーラが(6・8・10)秒間視える。オブセッションをフックに吊るすと、別のランダムな生存者が叫び声を上げて位置を知らせ、オブセッションになる。",
+  icon: "Perks/Yerkes/iconPerks_friendsTillTheEnd.png"
+},
+{
+  name: "電池付き",
+  description: "修理の完了した発電機の16メートル以内にいる間、5%の 迅速 を得る。移動速度のボーナスは、発電機の範囲を出たあと(1・3・5)秒間継続する。",
+  icon: "Perks/Yerkes/iconPerks_batteriesIncluded.png"
+},
+{
+  name: "アンバウンド",
+  description: "なんらかの手段で生存者が負傷すると、このパークが(24・27・30)秒間発動する。 窓を乗り越えると7%の迅速を10秒間得る。効果は重複しない。",
+  icon: "Perks/Applepie/iconPerks_Unbound.png"
+},
+{
+  name: "アンフォーシーン",
+  description: "発電機を破壊すると、脅威範囲がその発電機に(22・26・30)秒間移動して、範囲が32メートルとなる。 効果が続く限り、 探知不可 のステータス効果を得る。 その後、パークは30秒間のクールダウンに入る。",
+  icon: "Perks/Applepie/iconPerks_Unforeseen.png"
+},
+{
+  name: "アンダン",
+  description: "治療中や修理中に生存者がスキルチェックに失敗すると、トークンを3つ獲得する。最大(18・24・30)個まで。 発電機を破壊する際にトークンを所持している場合、トークンが全て使用される。トークン1つごとに発電機の全体の進行度が1%失われ、その後、発電機が1秒間ブロックされる。 発電機のブロックが解除されると、修理の進行度が後退し始める。 このパークには60秒間のクールダウンがある。 同調 オーラ 索敵",
+  icon: "Perks/Applepie/iconPerks_Undone.png"
+},
+{
+  name: "同調",
+  description: "アイテムが初めて使い果たされると、地面に落とされる。落とされたアイテムのオーラが視える。落とされたアイテムの12メートル以内にいる生存者のオーラが視える。影響を受けた生存者にはアイテムのオーラが視える。生存者が生存者のアイテムを拾うと、 無感覚 のステータス効果に(20・25・30)秒間苦しむ。 倦怠感",
+  icon: "Perks/Churros/iconPerks_WeaveAttunement.png"
+},
+{
+  name: "倦怠感",
+  description: "自分の36メートル以内にいる生存者がカラスを怖がらすと、 疲労 のステータス効果を(6・8・10)秒間得る。倦怠感には5秒間のクールダウンがある。",
+  icon: "Perks/Churros/iconPerks_LanguidTouch.png"
+},
+{
+  name: "闇の慢心",
+  description: "何らかの方法で自分が受けた 目眩まし の持続時間とパレットによる怯みの持続時間が15%増加する。通常の乗り越え速度が(15・20・25)%増加する。",
+  icon: "Perks/Churros/iconPerks_DarkArrogance.png"
+},
+{
+  name: "悲惨な運命",
+  description: "1台の発電機の修理が完了すると、ランダムな無力なトーテムが呪いのトーテムとなり、オブセッションを呪う。 オブセッションは(27・30・33%)の修理速度ペナルティに苦しむ。オブセッションはその呪いのトーテムの(12・12・12)メートル以内に来ると、そのオーラが視える。 この効果は呪いのトーテムが浄化されるまで持続する。",
+  icon: "Perks/Eclair/iconPerks_HexWretchedFate.png"
+},
+{
+  name: "人間の欲",
+  description: "未開封のチェストのオーラが視え、生存者が未開封のチェストの8メートル以内に入ると、その生存者のオーラが(3・4・5)秒間表示される。 チェストを蹴ってチェストを閉じる能力も得る。この能力には10秒間のクールダウンがある。閉じたチェストは生存者によって50%速く開錠される。",
+  icon: "Perks/Eclair/iconPerks_HumanGreed.png"
+},
+{
+  name: "支配",
+  description: "それぞれのトーテムとチェストに対して生存者が初めてアクションを行ったとき、そのトーテムまたはチェストがエンティティによって(8・12・16)秒間ブロックされる。 ブロックされたトーテムまたはチェストのオーラがあなたに白く表示される。",
+  icon: "Perks/Eclair/iconPerks_Dominance.png"
+},
+{
+  name: "天地を揺るがす雷",
+  description: "あなたの力の前に陸海の敵が震え上がる。高い場所から落ちたあと、(15・20・25)秒間、突進攻撃距離が75%増加する。このパークには5秒間のクールダウンがある。",
+  icon: "Perks/Gelato/T_UI_iconPerks_AllShakingThunder.png"
+},
+{
+  name: "不規則なコンパス",
+  description: "儀式開始時、4個のランダムなフックが悶絶のフックに置き換わる。悶絶のフックは白いオーラで表示される。生存者がフックから外されると、そのフックが悶絶のフックになる。悶絶のフックに生存者を吊るすと、最も修理の進んだ発電機が黄色のオーラで(6・8・10)秒間表示される。",
+  icon: "Perks/Gelato/T_UI_iconPerks_ScourgeHookJaggedCompass.png"
+},
+{
+  name: "容赦なし",
+  description: "生存者が自己治療の75%に達すると、連続でスキルチェックが発生する。そのスキルチェックに失敗した場合やその治療を中断した場合、生存者は(20・25・30)秒間 衰弱 のステータス効果に苦しむ。衰弱になると生存者は回復できなくなる。",
+  icon: "Perks/Gelato/T_UI_iconPerks_NoQuarter.png"
+},
+{
+  name: "生き地獄",
+  description: "通常攻撃で生存者に8回ダメージを与えると、無力なトーテムが呪いのトーテムとなり、全ての生存者を呪う。 通常攻撃で生存者にダメージを与えると、その生存者が5%の妨害を(10・12.5・15)秒間受ける。 この効果は、呪いのトーテムが浄化されるまで続く。",
+  icon: "Perks/kaneki/T_UI_iconPerks_NothingButMisery.png"
+},
+{
+  name: "切れない縁",
+  description: "生存者がダメージを受けると、トークンが1個貯まる。最大(6・7・8)まで。 生存者を担ぎ上げたり、降ろしたり、フックに吊るしたりする速度がトークン1個につき4%上昇する。",
+  icon: "Perks/kaneki/T_UI_iconPerks_ForeverEntwined.png"
+},
+{
+  name: "誰も自由ではない",
+  description: "生存者を初めてフックに吊るした時、トークンが1個貯まる(最大4個まで)。 全ての発電機の修理が完了すると、トークン1個につき(12・14・16)秒間、全ての窓と立っているパレットがブロックされる。",
+  icon: "Perks/kaneki/T_UI_iconPerks_NoneAreFree.png"
+},
+{
+  name: "従業員募集中",
+  description: "・発電機にダメージを与えると、その発電機が侵害状態になる。 侵害状態にある発電機の修理が完了すると、通常攻撃成功後のクールダウンが (40・50・60)秒間、25%減少する。 ・発電機にダメージを与えると、その発電機が侵害状態になる。 侵害状態にある発電機の修理が完了すると、通常攻撃成功後のクールダウンが25秒間、60%減少する。",
+  icon: "Perks/Anima/T_UI_iconPerks_HelpWanted.png"
+},
+{
+  name: "幻影の震撼",
+  description: "脅威範囲内にいる生存者が自分を見ると、その生存者が叫び声を上げてそのオーラが2秒間視える。 このパークには(80・70・60)秒間のクールダウンがある。",
+  icon: "Perks/Anima/T_UI_iconPerks_PhantomFear.png"
+},
+{
+  name: "誤作動",
+  description: "脱出ゲートのスイッチが80%以上進行した状態では、生存者が手を放すと、ゲート解放速度の(80・90・100)%の速度で後退する。 スイッチの進行が後退している間、脱出ゲートの照明がランダムに点滅するのが生存者に視える。",
+  icon: "Perks/Anima/T_UI_iconPerks_Haywire.png"
+},
+{
+  name: "貪欲",
+  description: "それぞれの生存者を初めてフックに吊るしたとき、トークンが1個貯まる（最大4個まで）。 トークンが4個貯まると、すべての生存者が叫び声を上げ、（40・50・60）秒間、 無防備 状態になる。",
+  icon: "Perks/Gasu/T_UI_iconPerks_Ravenous.png"
+},
+{
+  name: "泳ぐ目",
+  description: "生存者の追跡を始めると、20メートル以内にいる他の負傷した生存者全員のオーラが5秒間表示される。 このパークには（40・35・30）秒間のクールダウンがある。",
+  icon: "Perks/Gasu/T_UI_iconPerks_WanderingEye.png"
+},
+{
+  name: "破滅の序曲",
+  description: "呪いのトーテムが1つ生成され、最も遠くにある発電機を呪い、あなたにそのオーラを黄色で表示する。 生存者が呪われた発電機を5秒間修理すると、（20・25・30）秒間、自分が 探知不可 を得て自分の脅威範囲がその発電機に移る。 呪われた発電機の修理が完了すると、次に最も遠くにある発電機が呪われる。",
+  icon: "Perks/Gasu/T_UI_iconPerks_HexOvertureOfDoom.png"
+},
+{
+  name: "時間の逆行",
+  description: "生存者をフックに吊るしたあと（40・50・60）秒以内に20メートル以内の発電機を選んでアビリティ発動のボタン1を押すと、その発電機が爆発して進行度が即座に10%失われ、さらに後退し始める。",
+  icon: "Perks/First/T_UI_iconsPerks_TurnBackTheClock.png"
+},
+{
+  name: "極秘プロジェクト",
+  description: "トーテムが清められるか浄化されると、ブロックされていない発電機の中からランダムな発電機1台が（20・25・30）秒間ブロックされる。 1台以上の発電機がブロックされると、30秒間、探知不可を得る。",
+  icon: "Perks/First/T_UI_iconsPerks_SecretProject.png"
+},
+{
+  name: "ハイブマインド",
+  description: "生存者を最初にフックに吊るしたとき、無力なトーテムが呪いのトーテムとなる。 発電機のオーラの強さで、修理進行度が判別できる。 修理を完了すべき発電機が残り1台になると、残りの発電機が全て爆発して進行度が即座に（6・8・10）%失われて後退し始め、呪いのトーテムは輝きを失う。",
+  icon: "Perks/First/T_UI_iconsPerks_HexHiveMind.png"
+},
+
+
+/*ここから一般*/
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Actions/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Actions/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Actions/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Actions/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パーク自由",
+    description: "大当たり！好きなパークを１つ選択。",
+    icon: "StatusEffects/iconStatusEffects_exhausted.png"
+  },
+
+    ];
+
+    let shuffleInterval = null;
+    let killerShuffleInterval = null;
+    let isShuffling = false;
+
+    function getRandomParks() {
+      const shuffled = [...allParks].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, 4);
+    }
+
+    function renderParks(parks) {
+      const container = document.getElementById('perkContainer');
+      container.innerHTML = '';
+      parks.forEach(park => {
+        const div = document.createElement('div');
+        div.className = 'perk';
+        div.innerHTML = `
+          <img src="${park.icon}" alt="${park.name}" style="width:96px;height:96px;margin-bottom:12px;">
+          <div class="perk-name">${park.name}</div>
+          <div class="perk-desc">${park.description}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function startShuffle() {
+      // すでに回ってるなら何もしない
+      if (isShuffling) return;
+      isShuffling = true;
+
+      // キラーもスロットっぽくシャッフル（ストップで確定）
+      const killerIconEl = document.getElementById("killerIcon");
+      const killerNameEl = document.getElementById("killerName");
+
+      const tickKiller = () => {
+        currentKiller = pickRandomKiller();
+        if (killerIconEl) killerIconEl.src = currentKiller.icon;
+        if (killerNameEl) killerNameEl.textContent = currentKiller.name;
+      };
+      tickKiller(); // すぐ1回表示
+      killerShuffleInterval = setInterval(tickKiller, 80);
+
+
+      if (startSound) {
+        startSound.currentTime = 0;
+        startSound.play().catch(() => {});
+      }
+
+      shuffleInterval = setInterval(() => {
+        const parks = getRandomParks();
+        renderParks(parks);
+      }, 100);
+    }
+
+    // ★ここが「結果欄に 〇〇、〇〇、〇〇、〇〇 を出す」対応版
+    function stopShuffle() {
+      if (!isShuffling) return;
+
+      clearInterval(shuffleInterval);
+      shuffleInterval = null;
+
+      if (killerShuffleInterval) {
+        clearInterval(killerShuffleInterval);
+        killerShuffleInterval = null;
+      }
+      isShuffling = false;
+
+      if (stopSound) {
+        stopSound.currentTime = 0;
+        stopSound.play().catch(() => {});
+      }
+
+      // 表示中の4パーク名を取得して結果欄へ
+      const perkNames = Array.from(document.querySelectorAll(".perk-name"))
+        .map(el => el.textContent.trim())
+        .filter(Boolean);
+
+      document.getElementById("resultText").value = `使用するキラー：${currentKiller?.name ?? "不明"}、指定パーク：${perkNames.join("、")}`;
+    }
+
+    // ★コピー関数
+    function copyResult() {
+      const input = document.getElementById("resultText");
+      const text = input.value.trim();
+      if (!text) return;
+
+      // 新しめブラウザ優先
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).catch(() => {});
+        return;
+      }
+
+      // 互換用
+      input.select();
+      input.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      input.setSelectionRange(0, 0);
+      input.blur();
+    }
+
+    // ===== 音量 + 自動再生制限対策 =====
+    window.addEventListener('DOMContentLoaded', () => {
+      if (fireSound)  fireSound.volume = 0.05;
+      if (bgmSound)   bgmSound.volume  = 0.05;
+      if (startSound) startSound.volume = 0.1;
+      if (stopSound)  stopSound.volume  = 0.1;
+
+      // 最初のユーザー操作で再生
+      const playAudio = () => {
+        fireSound?.play().catch(() => {});
+        bgmSound?.play().catch(() => {});
+        document.removeEventListener('click', playAudio);
+      };
+      document.addEventListener('click', playAudio);
+    });
+  
+    // 初期表示（何も押してない時の見た目用）
+    (function initKiller(){
+      currentKiller = pickRandomKiller();
+      const killerIconEl = document.getElementById("killerIcon");
+      const killerNameEl = document.getElementById("killerName");
+      if (killerIconEl) killerIconEl.src = currentKiller.icon;
+      if (killerNameEl) killerNameEl.textContent = currentKiller.name;
+    })();
+
+</script>
+</body>
+</html>
