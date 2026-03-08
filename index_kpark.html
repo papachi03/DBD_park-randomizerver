@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>DBD パークランダマイザ_Killer</title>
+  <title>DBD パークランダマイザー</title>
   <style>
     body {
       font-family: sans-serif;
@@ -473,6 +473,9 @@ align-items:flex-start; /* ←これを追加 */
   font-size:16px;
   font-weight:bold;
 }
+.killer-card.hidden{
+  display: none;
+}
 </style>
 </head>
 
@@ -490,7 +493,7 @@ align-items:flex-start; /* ←これを追加 */
 <audio id="stopSound" src="SE2.mp3"></audio>  <div>
 
 <div class="title-bar">
-  <h1>DBD Park Randomizer ver5.0</h1>
+  <h1>DBD Park Randomizer ver5.1.0</h1>
 
   <div class="title-sound-controls">
     <button class="mini-sound-btn" onclick="toggleBgm()" id="bgmBtn">🎵 BGM ON</button>
@@ -537,16 +540,15 @@ align-items:flex-start; /* ←これを追加 */
 
 <div class="result-row">
 
-  <div class="killer-card">
-    <img id="killerIcon">
-    <div id="killerName"></div>
-  </div>
+<div class="killer-card" id="killerCard">
+  <img id="killerIcon">
+  <div id="killerName"></div>
+</div>
 
   <div class="perk-container" id="perkContainer"></div>
 
 </div>
 
- <div class="perk-container" id="perkContainer"></div>
 <div class="result-area">
   <input id="resultText" type="text" readonly placeholder="ストップするとここに4つのパーク名が出ます">
   <button class="control-btn" onclick="copyResult()">コピー</button>
@@ -698,10 +700,9 @@ let ownedKillers = loadOwnedKillers();
         .replace(/^T_UI_K\d+_/,"")
         .replace(/^K\d+_/,"");
     }
-    function getAvailableKillers() {
+function getAvailableKillers() {
   const allKillers = getAllKillers();
-  const filtered = allKillers.filter(killer => ownedKillers.has(killer.file));
-  return filtered.length > 0 ? filtered : allKillers;
+  return allKillers.filter(killer => ownedKillers.has(killer.file));
 }
 function renderKillerCheckboxes() {
   const list = document.getElementById("killerCheckboxList");
@@ -753,12 +754,9 @@ function selectAllKillers() {
 
 function pickRandomKiller() {
   const available = getAvailableKillers();
-
   if (available.length === 0) {
-    alert("ランダム対象キラーが選択されていません。");
-    return getAllKillers()[0];
+    return null;
   }
-
   return available[Math.floor(Math.random() * available.length)];
 }
 
@@ -1522,31 +1520,31 @@ function toggleSe() {
   {
     name: "パークなし",
     description: "ホッホッホ､はずれじゃよ。",
-    icon: "Actions/iconAction_carriedBody.png"
+    icon: "Perks/iconAction_carriedBody.png"
   },
 
   {
     name: "パークなし",
     description: "ホッホッホ､はずれじゃよ。",
-    icon: "Actions/iconAction_carriedBody.png"
+    icon: "Perks/iconAction_carriedBody.png"
   },
 
   {
     name: "パークなし",
     description: "ホッホッホ､はずれじゃよ。",
-    icon: "Actions/iconAction_carriedBody.png"
+    icon: "Perks/iconAction_carriedBody.png"
   },
 
   {
     name: "パークなし",
     description: "ホッホッホ､はずれじゃよ。",
-    icon: "Actions/iconAction_carriedBody.png"
+    icon: "Perks/iconAction_carriedBody.png"
   },
 
   {
     name: "パーク自由",
     description: "大当たり！好きなパークを１つ選択。",
-    icon: "StatusEffects/iconStatusEffects_exhausted.png"
+    icon: "Perks/iconStatusEffects_exhausted.png"
   },
 
     ];
@@ -1562,10 +1560,28 @@ function toggleSe() {
     }
 
 function updateKillerDisplay(killer) {
+  const killerCard = document.getElementById("killerCard");
   const killerIconEl = document.getElementById("killerIcon");
   const killerNameEl = document.getElementById("killerName");
 
-  if (killerIconEl) killerIconEl.src = killer.icon;
+  if (!killer) {
+    if (killerCard) killerCard.classList.add("hidden");
+    if (killerIconEl) {
+      killerIconEl.removeAttribute("src");
+      killerIconEl.style.display = "none";
+    }
+    if (killerNameEl) killerNameEl.textContent = "";
+    return;
+  }
+
+  if (killerCard) killerCard.classList.remove("hidden");
+
+  if (killerIconEl) {
+    killerIconEl.src = killer.icon;
+    killerIconEl.alt = killer.name;
+    killerIconEl.style.display = "block";
+  }
+
   if (killerNameEl) killerNameEl.textContent = killer.name;
 }
 
@@ -1622,7 +1638,7 @@ if (seEnabled && startSound) {
   startSound.play().catch(() => {});
 }
 
-    function startShuffle() {
+function startShuffle() {
   if (isShuffling || isStopping) return;
 
   isShuffling = true;
@@ -1634,13 +1650,20 @@ if (seEnabled && startSound) {
     startSound.play().catch(() => {});
   }
 
-  const tickKiller = () => {
-    currentKiller = pickRandomKiller();
-    updateKillerDisplay(currentKiller);
-  };
+  const availableKillers = getAvailableKillers();
 
-  tickKiller();
-  killerShuffleInterval = setInterval(tickKiller, 75);
+  if (availableKillers.length > 0) {
+    const tickKiller = () => {
+      currentKiller = pickRandomKiller();
+      updateKillerDisplay(currentKiller);
+    };
+
+    tickKiller();
+    killerShuffleInterval = setInterval(tickKiller, 75);
+  } else {
+    currentKiller = null;
+    updateKillerDisplay(null);
+  }
 
   shuffleInterval = setInterval(() => {
     const parks = getRandomParks();
@@ -1682,8 +1705,15 @@ async function stopShuffle() {
     killerShuffleInterval = null;
   }
 
+const availableKillers = getAvailableKillers();
+
+if (availableKillers.length > 0) {
   currentKiller = pickRandomKiller();
   updateKillerDisplay(currentKiller);
+} else {
+  currentKiller = null;
+  updateKillerDisplay(null);
+}
 
   const finalParks = getRandomParks();
 
@@ -1737,7 +1767,9 @@ async function stopShuffle() {
   }
 
   const perkNames = finalParks.map(park => park.name);
-  const resultText = `使用キラー：${currentKiller.name} ／ 指定パーク：${perkNames.join("、")}`;
+  const resultText = currentKiller
+  ? `使用キラー：${currentKiller.name} ／ 指定パーク：${perkNames.join("、")}`
+  : `指定パーク：${perkNames.join("、")}`;
 
   const resultInput = document.getElementById("resultText");
   if (resultInput) resultInput.value = resultText;
@@ -1789,6 +1821,8 @@ function stopAllSounds() {
 window.addEventListener("DOMContentLoaded", () => {
   const suppressAutoClick = sessionStorage.getItem("dbd_page_switching") === "1";
   sessionStorage.removeItem("dbd_page_switching");
+
+updateKillerDisplay(currentKiller);
 
   stopAllSounds();
 

@@ -337,6 +337,15 @@
   border-color: rgba(255,255,255,0.45);
   box-shadow: 0 0 20px rgba(255,255,255,0.12);
 }
+.perk.locked.special-glow{
+  border: 2px solid #ffd700;
+  box-shadow:
+    0 0 16px rgba(255,215,0,0.95),
+    0 0 32px rgba(255,140,0,0.70),
+    0 0 48px rgba(255,80,0,0.45);
+  animation: specialGlow 0.9s ease-in-out infinite alternate;
+  transform: scale(1.05);
+}
 .title-bar{
   display:flex;
   justify-content:center;
@@ -371,10 +380,30 @@
 .mini-sound-btn:hover{
   background:rgba(255,255,255,0.15);
 }
+/* 特殊枠が出たとき画面全体を一瞬光らせる */
+.screen-flash{
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at center,
+      rgba(255,230,120,0.30) 0%,
+      rgba(255,140,0,0.16) 35%,
+      rgba(255,60,0,0.08) 60%,
+      rgba(0,0,0,0) 100%);
+  transition: opacity 0.12s ease;
+  z-index: 9999;
+}
+
+.screen-flash.show{
+  opacity: 1;
+}
 </style>
 </head>
 
 <body>
+<div id="screenFlash" class="screen-flash"></div>
 <!-- 焚き火の音 -->
 <audio id="fireSound" src="fire.mp3" loop></audio>
 
@@ -388,7 +417,7 @@
 <audio id="stopSound" src="SE2.mp3"></audio>  <div>
 
 <div class="title-bar">
-  <h1>DBD Park Randomizer ver5.0</h1>
+  <h1>DBD Park Randomizer ver5.1.0</h1>
 
   <div class="title-sound-controls">
     <button class="mini-sound-btn" onclick="toggleBgm()" id="bgmBtn">🎵 BGM ON</button>
@@ -1356,31 +1385,31 @@
   {
     name: "パークなし",
     description: "ホッホッホ､はずれじゃよ。",
-    icon: "Actions/iconAction_carriedBody.png"
+    icon: "Perks/iconAction_carriedBody.png"
   },
 
   {
     name: "パークなし",
     description: "ホッホッホ､はずれじゃよ。",
-    icon: "Actions/iconAction_carriedBody.png"
+    icon: "Perks/iconAction_carriedBody.png"
   },
 
   {
     name: "パークなし",
     description: "ホッホッホ､はずれじゃよ。",
-    icon: "Actions/iconAction_carriedBody.png"
+    icon: "Perks/iconAction_carriedBody.png"
   },
 
   {
     name: "パークなし",
     description: "ホッホッホ､はずれじゃよ。",
-    icon: "Actions/iconAction_carriedBody.png"
+    icon: "Perks/iconAction_carriedBody.png"
   },
 
   {
     name: "パーク自由",
     description: "大当たり！好きなパークを１つ選択。",
-    icon: "StatusEffects/iconStatusEffects_exhausted.png"
+    icon: "Perks/iconStatusEffects_exhausted.png"
   },
 
 {
@@ -1470,12 +1499,22 @@
 
     ];
 
-function isSpecialPerk(park) {
-  const name = park.name.trim();
-  return name === "パークなし" || name === "パーク自由";
+function triggerSpecialFlash() {
+  const flash = document.getElementById("screenFlash");
+  if (!flash) return;
+
+  flash.classList.add("show");
+  setTimeout(() => flash.classList.remove("show"), 180);
+  setTimeout(() => flash.classList.add("show"), 260);
+  setTimeout(() => flash.classList.remove("show"), 420);
 }
 
 const SPECIAL_PERK_NAMES = ["パークなし", "パーク自由"];
+
+function isSpecialPerk(park) {
+  const name = (park.name || "").trim();
+  return SPECIAL_PERK_NAMES.includes(name);
+}
 
 let shuffleInterval = null;
 let isShuffling = false;
@@ -1484,11 +1523,6 @@ let bgmEnabled = true;
 let seEnabled = true;
 let resultHistory = [];
 let currentPreviewParks = [];
-
-function isSpecialPerk(park) {
-  const name = (park.name || "").trim();
-  return SPECIAL_PERK_NAMES.includes(name);
-}
 
 function getRandomParks() {
   const shuffled = [...allParks].sort(() => 0.5 - Math.random());
@@ -1515,7 +1549,7 @@ function renderParks(parks, lockedCount = 0, spinning = false) {
       div.classList.add("locked");
     }
 
-    if (isSpecialPerk && isSpecialPerk(park)) {
+    if (isSpecialPerk(park)) {
       div.classList.add("special-glow");
     }
 
@@ -1640,6 +1674,10 @@ async function stopShuffle() {
 
   stopStartSe();
   playStopSe();
+const hasSpecial = finalParks.some(park => isSpecialPerk(park));
+if (hasSpecial) {
+  triggerSpecialFlash();
+}
 
   const perkNames = finalParks.map(park => park.name);
   const resultText = perkNames.join("、");
