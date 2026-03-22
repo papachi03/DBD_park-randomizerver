@@ -1,0 +1,4228 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>DBDパークスロット</title>
+<style>
+html, body{
+  width:100%;
+  height:100%;
+  margin:0;
+  padding:0;
+  overflow:hidden;
+}
+
+body{
+  font-family:sans-serif;
+  text-align:center;
+  background:#000;
+  color:#fff;
+  text-shadow:1px 1px 2px #000;
+}
+
+#app-stage{
+  width:100vw;
+  height:100vh;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#000;
+}
+
+#game-root{
+  width:1600px;
+  height:900px;
+  position:relative;
+  transform-origin:center center;
+  will-change:transform;
+  backface-visibility:hidden;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* ===================== */
+/* 共通ボタン */
+/* ===================== */
+
+button{
+  cursor:pointer;
+}
+
+.mode-btn{
+  padding:10px 18px;
+  font-size:16px;
+  border:none;
+  border-radius:999px;
+  background:rgba(255,255,255,0.18);
+  color:#fff;
+  margin:0;
+}
+
+.mini-sound-btn{
+  padding:8px 12px;
+  font-size:13px;
+  border:none;
+  border-radius:999px;
+  background:rgba(0,0,0,0.55);
+  color:#fff;
+  box-shadow:0 4px 10px rgba(0,0,0,0.25);
+  margin:0;
+}
+
+.control-btn{
+  width:90px;
+  height:40px;
+  border:none;
+  border-radius:6px;
+  background:#666;
+  color:#fff;
+  cursor:pointer;
+}
+
+.small-btn{
+  padding:8px 12px;
+  font-size:14px;
+  width:auto;
+  height:auto;
+  border-radius:8px;
+}
+
+.mode-btn:hover,
+.mini-sound-btn:hover{
+  background:rgba(255,255,255,0.24);
+}
+
+/* ===================== */
+/* 画面全体フラッシュ */
+/* ===================== */
+
+.screen-flash{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  background:
+    radial-gradient(circle at center,
+      rgba(255,230,120,0.30) 0%,
+      rgba(255,140,0,0.16) 35%,
+      rgba(255,60,0,0.08) 60%,
+      rgba(0,0,0,0) 100%);
+  transition:opacity 0.12s ease;
+  z-index:9999;
+}
+
+.screen-flash.show{
+  opacity:1;
+}
+
+.screen-flash.rainbow,
+.screen-flash.rainbow-flash{
+  background:
+    radial-gradient(circle at center,
+      rgba(255,255,255,0.22) 0%,
+      rgba(255,80,120,0.18) 18%,
+      rgba(255,180,80,0.16) 34%,
+      rgba(255,240,80,0.14) 48%,
+      rgba(80,255,140,0.14) 62%,
+      rgba(80,190,255,0.14) 76%,
+      rgba(180,80,255,0.14) 88%,
+      rgba(0,0,0,0) 100%);
+  animation:rainbowFlashShift 0.7s linear infinite;
+}
+
+/* ===================== */
+/* 筐体ベース */
+/* ===================== */
+
+.slot-ui{
+  position:relative;
+  width:1600px;
+  height:900px;
+  margin:0 auto;
+  background-image:url("assets/background.png");
+  background-size:1600px 900px;
+  background-position:top left;
+  background-repeat:no-repeat;
+  overflow:hidden;
+}
+
+.slot-base{
+  position:absolute;
+  top:0;
+  left:0;
+  width:1600px;
+  height:900px;
+  display:block;
+  object-fit:fill;
+  user-select:none;
+  pointer-events:none;
+  z-index:1;
+}
+
+/* ===================== */
+/* 上部ヘッダー */
+/* ===================== */
+
+.slot-overlay-header{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:5;
+}
+
+.slot-lcd-ui{
+  position:absolute;
+  top:155px;
+  left:50%;
+  transform:translateX(-50%);
+  width:760px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  pointer-events:auto;
+  z-index:6;
+}
+
+.slot-lcd-btn{
+  margin:0;
+}
+
+.slot-overlay-creator{
+  position:absolute;
+  top:258px;
+  left:50%;
+  transform:translateX(-50%);
+  width:760px;
+  text-align:center;
+  font-size:18px;
+  color:#fff;
+  opacity:0.95;
+  text-shadow:0 1px 2px #000;
+  pointer-events:auto;
+  z-index:6;
+}
+
+.slot-overlay-creator a{
+  color:#9be3ff;
+  text-decoration:none;
+}
+
+.slot-overlay-creator a:hover{
+  text-decoration:underline;
+}
+
+/* ===================== */
+/* ステータス / 結果 / 履歴 */
+/* ===================== */
+
+.status-badge{
+  position:absolute;
+  top:250px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:6px 14px;
+  border-radius:999px;
+  background:rgba(0,0,0,0.6);
+  border:1px solid rgba(255,255,255,0.2);
+  font-size:14px;
+  color:#fff;
+  z-index:20;
+  display:none;
+}
+
+.result-area{
+  position:absolute;
+  top:724px;
+  left:54.6%;
+  transform:translateX(-50%);
+  width:695px;
+  height:74px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  z-index:20;
+}
+
+#resultText{
+  flex:1;
+  height:68px;
+  box-sizing:border-box;
+  padding:0 18px;
+  font-size:20px;
+  font-weight:900;
+  letter-spacing:0.5px;
+  border-radius:10px;
+  border:2px solid rgba(255,255,255,0.4);
+  background:#fff;
+  color:#111;
+  outline:none;
+  line-height:68px;
+  text-align:center;
+  box-shadow:
+    inset 0 1px 3px rgba(0,0,0,0.10),
+    0 2px 8px rgba(0,0,0,0.18);
+}
+
+/* ===================== */
+/* リール窓 */
+/* ===================== */
+
+.reel-window{
+  position:absolute;
+  width:200px;
+  height:200px;
+  z-index:10;
+}
+
+.reel-pos1{ top:312px; left:338px; }
+.reel-pos2{ top:312px; left:595px; }
+.reel-pos3{ top:312px; left:852px; }
+.reel-pos4{ top:312px; left:1110px; }
+
+.reel{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  border-radius:10px;
+  background:transparent;
+  border:none;
+  box-shadow:none;
+  position:relative;
+  z-index:11;
+}
+
+.reel-track{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  will-change:transform;
+}
+
+.reel-item{
+  width:100%;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  color:#fff;
+  text-align:center;
+}
+
+/* サバイバー・パーク側 */
+.reel-window .reel-item{
+  height:200px;
+  padding:8px;
+  gap:8px;
+}
+
+.reel-window .reel-item img{
+  width:108px;
+  height:108px;
+  object-fit:contain;
+  flex-shrink:0;
+}
+
+.reel-window .reel-item-name{
+  font-size:20px;
+  font-weight:bold;
+  line-height:1.15;
+  text-shadow:1px 1px 2px #000;
+}
+
+/* ===================== */
+/* 右上キラーリール */
+/* ===================== */
+
+.killer-side-window{
+  position:absolute;
+  top:60px;
+  left:1235px;
+  width:145px;
+  height:160px;
+  z-index:12;
+}
+
+.killer-side-reel{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  border-radius:8px;
+  background:transparent;
+  border:none;
+  box-shadow:none;
+  position:relative;
+}
+
+.killer-side-reel .reel-track{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  will-change:transform;
+}
+
+.killer-side-reel .reel-item{
+  height:138px;
+  padding:4px;
+  padding-top:30px;   /* ←ここで下げる */
+  gap:4px;
+}
+
+.killer-side-reel.final-view .reel-item{
+  height:160px;
+  padding-top:18px;
+}
+
+.killer-side-reel .reel-item img{
+  width:88px;
+  height:110px;
+  object-fit:contain;
+  margin:0;
+}
+
+.killer-side-reel .reel-item-name{
+  font-size:11px;
+  line-height:1.1;
+  font-weight:bold;
+  text-shadow:1px 1px 2px #000;
+}
+
+/* ===================== */
+/* スタートレバー */
+/* ===================== */
+
+.slot-start-lever{
+  border:none;
+  background:transparent;
+  padding:0;
+  margin:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.slot-start-pos{
+  position:absolute;
+  top:560px;
+  left:400px;
+  width:128px;
+  height:128px;
+  z-index:12;
+}
+
+.slot-start-lever img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  pointer-events:none;
+  filter:drop-shadow(0 8px 8px rgba(0,0,0,0.55));
+  transition:transform .1s ease, filter .1s ease;
+}
+
+.slot-start-lever:hover img{
+  transform:translateY(-2px);
+}
+
+.slot-start-lever:active img{
+  transform:translateY(4px) scale(0.96);
+  filter:brightness(0.88) drop-shadow(0 4px 4px rgba(0,0,0,0.55));
+}
+
+.slot-start-lever:disabled{
+  cursor:not-allowed;
+}
+
+/* ===================== */
+/* 停止ボタン */
+/* ===================== */
+
+.slot-stop-group-overlay{
+  position:absolute;
+  top:585px;
+  left:620px;
+  width:520px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  z-index:12;
+}
+
+.stop-socket{
+  width:86px;
+  height:86px;
+  position:relative;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:transparent;
+  box-shadow:none;
+}
+
+.reel-stop-btn{
+  width:86px;
+  height:86px;
+  border:none;
+  background:transparent;
+  padding:0;
+  margin:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  position:relative;
+  z-index:2;
+}
+
+.reel-stop-btn img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  pointer-events:none;
+  filter:
+    drop-shadow(0 2px 2px rgba(0,0,0,0.45))
+    drop-shadow(0 0 4px rgba(255,60,40,0.10));
+  transition:transform .08s ease, filter .08s ease;
+}
+
+.reel-stop-btn:hover:not(:disabled) img{
+  transform:translateY(-1px) scale(1.03);
+}
+
+.reel-stop-btn:active:not(:disabled) img{
+  transform:translateY(3px) scale(0.95);
+  filter:brightness(0.82) drop-shadow(0 1px 1px rgba(0,0,0,0.45));
+}
+
+.reel-stop-btn:disabled{
+  cursor:not-allowed;
+}
+
+/* 半透明にしない */
+.reel-stop-btn:disabled img{
+  opacity:1;
+  filter:
+    drop-shadow(0 2px 2px rgba(0,0,0,0.45))
+    drop-shadow(0 0 4px rgba(255,60,40,0.10));
+}
+
+/* ===================== */
+/* 停止ボタン発光 */
+/* ===================== */
+
+.stop-socket.active-glow{
+  border-radius:50%;
+  box-shadow:
+    0 0 10px rgba(255, 40, 40, 0.55),
+    0 0 22px rgba(255, 20, 20, 0.45),
+    0 0 36px rgba(255, 0, 0, 0.30);
+  animation:stopSocketGlowPulse 0.8s ease-in-out infinite alternate;
+}
+
+.stop-socket.active-glow::after{
+  content:"";
+  position:absolute;
+  inset:-8px;
+  border-radius:50%;
+  border:2px solid rgba(255, 70, 70, 0.65);
+  box-shadow:
+    0 0 10px rgba(255, 70, 70, 0.45),
+    inset 0 0 10px rgba(255, 40, 40, 0.15);
+  pointer-events:none;
+}
+
+/* ===================== */
+/* リール演出 */
+/* ===================== */
+
+.reel.ready-stop{
+  box-shadow:
+    0 0 10px rgba(255,255,255,0.18),
+    0 0 18px rgba(255,255,255,0.10);
+}
+
+.reel.stopping{
+  box-shadow:
+    0 0 12px rgba(255,255,255,0.22),
+    0 0 22px rgba(255,255,255,0.14);
+}
+
+.reel.special-hit{
+  border:2px solid #ffd700;
+  box-shadow:
+    0 0 16px rgba(255,215,0,0.95),
+    0 0 32px rgba(255,140,0,0.70),
+    0 0 48px rgba(255,80,0,0.45);
+}
+
+.reel.rainbow-hit{
+  border:2px solid rgba(255,255,255,0.95);
+  box-shadow:
+    0 0 14px rgba(255,255,255,0.85),
+    0 0 28px rgba(255,0,120,0.45),
+    0 0 42px rgba(0,180,255,0.45),
+    0 0 56px rgba(255,230,0,0.35);
+  animation:
+    rainbowBorderShift 1.2s linear infinite,
+    rainbowPulse 0.7s ease-in-out infinite alternate;
+  overflow:hidden;
+}
+
+.reel.rainbow-hit::before{
+  content:"";
+  position:absolute;
+  inset:-18%;
+  background:conic-gradient(
+    from 0deg,
+    rgba(255, 0, 102, 0.00) 0deg,
+    rgba(255, 0, 102, 0.38) 35deg,
+    rgba(255, 140, 0, 0.38) 75deg,
+    rgba(255, 230, 0, 0.34) 110deg,
+    rgba(0, 255, 140, 0.34) 160deg,
+    rgba(0, 170, 255, 0.38) 215deg,
+    rgba(90, 120, 255, 0.38) 260deg,
+    rgba(200, 80, 255, 0.38) 310deg,
+    rgba(255, 0, 102, 0.38) 360deg
+  );
+  filter:blur(18px) saturate(1.25);
+  opacity:0.95;
+  animation:rainbowSpin 1.6s linear infinite;
+  pointer-events:none;
+  z-index:0;
+}
+
+.reel.rainbow-hit::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(
+      120deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.07) 30%,
+      rgba(255,255,255,0.42) 48%,
+      rgba(255,255,255,0.08) 62%,
+      rgba(255,255,255,0) 100%
+    );
+  transform:translateX(-140%);
+  animation:rainbowShine 1.1s ease-in-out infinite;
+  pointer-events:none;
+  z-index:1;
+}
+
+.reel.rainbow-hit .reel-track,
+.reel.rainbow-hit .reel-item{
+  position:relative;
+  z-index:2;
+}
+
+.reel.flash{
+  animation:reelFlash 0.16s ease-out;
+  border-color:rgba(255,255,255,0.95) !important;
+  box-shadow:
+    0 0 18px rgba(255,255,255,1),
+    0 0 34px rgba(255,255,255,0.85),
+    0 0 54px rgba(255,240,180,0.55),
+    0 0 78px rgba(255,255,255,0.35) !important;
+  z-index:3;
+}
+
+.reel.flash-hold{
+  border:2px solid rgba(255,255,255,0.98) !important;
+  box-shadow:
+    0 0 18px rgba(255,255,255,1),
+    0 0 34px rgba(255,255,255,0.88),
+    0 0 56px rgba(255,245,200,0.62),
+    0 0 84px rgba(255,255,255,0.38) !important;
+  animation:flashHoldPulse 0.55s ease-in-out infinite alternate;
+  z-index:3;
+}
+
+.reel.frame-run{
+  border-color:rgba(255,255,255,0.55);
+  box-shadow:
+    0 0 10px rgba(255,255,255,0.12),
+    0 4px 12px rgba(0,0,0,0.35);
+}
+
+.reel.frame-lit{
+  border:2px solid rgba(255,245,180,0.98);
+  box-shadow:
+    0 0 14px rgba(255,255,220,0.95),
+    0 0 28px rgba(255,220,120,0.72),
+    0 0 40px rgba(255,170,50,0.48);
+}
+
+.reel.frame-hit,
+.reel.frame-win-hold{
+  border:2px solid rgba(255,80,80,0.98);
+  box-shadow:
+    0 0 16px rgba(255,80,80,0.95),
+    0 0 32px rgba(255,30,30,0.75),
+    0 0 52px rgba(255,0,0,0.45);
+}
+
+/* ===================== */
+/* レバー演出 */
+/* ===================== */
+
+.slot-start-lever.atari-glow img{
+  animation:atariLeverGlow 0.55s ease-in-out infinite alternate;
+  filter:
+    drop-shadow(0 0 8px rgba(255,215,0,0.95))
+    drop-shadow(0 0 18px rgba(255,160,0,0.85))
+    drop-shadow(0 0 34px rgba(255,80,0,0.65));
+}
+
+.slot-start-lever.atari-rainbow img,
+.slot-start-lever.rainbow-glow img{
+  animation:
+    rainbowLeverPulse 0.65s ease-in-out infinite alternate,
+    rainbowLeverHue 1.4s linear infinite;
+  filter:
+    drop-shadow(0 0 10px rgba(255,255,255,0.95))
+    drop-shadow(0 0 18px rgba(255,60,180,0.65))
+    drop-shadow(0 0 28px rgba(0,180,255,0.65))
+    drop-shadow(0 0 40px rgba(255,220,0,0.55));
+}
+
+/* ===================== */
+/* キラー設定パネル */
+/* ===================== */
+
+.killer-filter-panel{
+  position:absolute;
+  top:235px;
+  left:50%;
+  transform:translateX(-50%);
+  width:900px;
+  max-height:260px;
+  overflow-y:auto;
+  padding:14px;
+  border-radius:12px;
+  background:rgba(0,0,0,0.75);
+  border:1px solid rgba(255,255,255,0.15);
+  z-index:30;
+}
+
+.killer-filter-panel.hidden{
+  display:none;
+}
+
+.killer-filter-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+
+.killer-filter-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.killer-checkbox-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+  gap:8px 12px;
+  text-align:left;
+}
+
+.killer-checkbox-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:14px;
+  background:rgba(255,255,255,0.05);
+  border-radius:8px;
+  padding:8px 10px;
+}
+
+.killer-checkbox-item input{
+  transform:scale(1.1);
+}
+
+/* ===================== */
+/* アニメーション */
+/* ===================== */
+
+@keyframes stopSocketGlowPulse{
+  from{
+    transform:scale(1);
+    box-shadow:
+      0 0 8px rgba(255, 40, 40, 0.42),
+      0 0 16px rgba(255, 20, 20, 0.32),
+      0 0 26px rgba(255, 0, 0, 0.20);
+  }
+  to{
+    transform:scale(1.04);
+    box-shadow:
+      0 0 12px rgba(255, 70, 70, 0.72),
+      0 0 26px rgba(255, 30, 30, 0.56),
+      0 0 42px rgba(255, 0, 0, 0.34);
+  }
+}
+
+@keyframes atariLeverGlow{
+  from{
+    transform:scale(1);
+    filter:
+      brightness(1.05)
+      drop-shadow(0 0 8px rgba(255,215,0,0.85))
+      drop-shadow(0 0 18px rgba(255,160,0,0.55));
+  }
+  to{
+    transform:scale(1.06);
+    filter:
+      brightness(1.28)
+      drop-shadow(0 0 14px rgba(255,215,0,1))
+      drop-shadow(0 0 28px rgba(255,140,0,0.95))
+      drop-shadow(0 0 44px rgba(255,60,0,0.75));
+  }
+}
+
+@keyframes rainbowSpin{
+  from{ transform:rotate(0deg) scale(1); }
+  to{ transform:rotate(360deg) scale(1); }
+}
+
+@keyframes rainbowBorderShift{
+  0%{ filter:hue-rotate(0deg) saturate(1.1); }
+  100%{ filter:hue-rotate(360deg) saturate(1.35); }
+}
+
+@keyframes rainbowPulse{
+  from{
+    transform:scale(1);
+    box-shadow:
+      0 0 14px rgba(255,255,255,0.75),
+      0 0 28px rgba(255,0,120,0.35),
+      0 0 42px rgba(0,180,255,0.35),
+      0 0 56px rgba(255,230,0,0.25);
+  }
+  to{
+    transform:scale(1.045);
+    box-shadow:
+      0 0 18px rgba(255,255,255,0.95),
+      0 0 34px rgba(255,0,120,0.55),
+      0 0 52px rgba(0,180,255,0.52),
+      0 0 70px rgba(255,230,0,0.42);
+  }
+}
+
+@keyframes rainbowShine{
+  0%{ transform:translateX(-140%); opacity:0; }
+  20%{ opacity:1; }
+  60%{ opacity:1; }
+  100%{ transform:translateX(140%); opacity:0; }
+}
+
+@keyframes rainbowLeverPulse{
+  from{ transform:scale(1); }
+  to{ transform:scale(1.08); }
+}
+
+@keyframes rainbowLeverHue{
+  0%{ filter:hue-rotate(0deg) brightness(1.08); }
+  100%{ filter:hue-rotate(360deg) brightness(1.28); }
+}
+
+@keyframes rainbowFlashShift{
+  from{ filter:hue-rotate(0deg) saturate(1.1); }
+  to{ filter:hue-rotate(360deg) saturate(1.35); }
+}
+
+@keyframes reelFlash{
+  0%{
+    transform:scale(1);
+    filter:brightness(1);
+  }
+  45%{
+    transform:scale(1.04);
+    filter:brightness(2.4);
+  }
+  100%{
+    transform:scale(1);
+    filter:brightness(1.08);
+  }
+}
+
+@keyframes flashHoldPulse{
+  from{
+    transform:scale(1);
+    filter:brightness(1.08);
+  }
+  to{
+    transform:scale(1.03);
+    filter:brightness(1.32);
+  }
+}
+
+.killer-side-reel .reel-item{
+  height:138px;
+  padding:4px;
+  padding-top:30px;
+  gap:4px;
+}
+
+.killer-side-reel.final-view .reel-item{
+  height:160px;
+  padding-top:18px;
+  justify-content:flex-start;
+}
+
+.killer-side-reel.final-view .reel-item{
+  height:160px;
+  padding-top:18px;
+  justify-content:flex-start;
+}
+
+.killer-side-reel .reel-item.reel-item-empty,
+.killer-side-reel.final-view .reel-item.reel-item-empty{
+  height:160px;
+  padding-top:0;
+  justify-content:center;
+  align-items:center;
+  gap:0;
+}
+
+.killer-side-reel .reel-item.reel-item-empty .reel-item-name{
+  font-size:18px;
+  line-height:1.2;
+  font-weight:bold;
+}
+
+.slot-chance-video{
+  position:absolute;
+  top:20px;
+  left:75px;
+  width:35%;
+  height:35%;
+  object-fit:contain;
+  display:none;
+  pointer-events:none;
+  z-index:0;
+}
+
+.slot-ita{
+  position:absolute;
+  top:22px;
+  left:142px;
+  width:24%;
+  height:24%;
+  object-fit:contain;
+  pointer-events:none;
+  z-index:1;
+  transform-origin:center center;
+}
+
+.slot-ita.shaking{
+  animation:itaShake 0.42s ease-in-out;
+}
+
+@keyframes itaShake{
+  0%   { transform:translate(0, 0) scale(1); }
+  12%  { transform:translate(-8px, 1px) rotate(-2deg) scale(1.02); }
+  24%  { transform:translate(8px, -1px) rotate(2deg) scale(1.02); }
+  36%  { transform:translate(-10px, 1px) rotate(-2.5deg) scale(1.03); }
+  48%  { transform:translate(10px, -1px) rotate(2.5deg) scale(1.03); }
+  60%  { transform:translate(-7px, 0) rotate(-1.8deg) scale(1.02); }
+  72%  { transform:translate(7px, 0) rotate(1.8deg) scale(1.02); }
+  100% { transform:translate(0, 0) rotate(0deg) scale(1); }
+}
+
+.slot-control-row{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:-6px;
+}
+
+.slot-volume-row{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-top:2px;
+  margin-top:-8px;
+}
+
+.volume-box{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 12px;
+  border-radius:999px;
+  background:rgba(0,0,0,0.45);
+  color:#fff;
+  box-shadow:0 4px 10px rgba(0,0,0,0.20);
+}
+
+.volume-box label{
+  font-size:13px;
+  min-width:32px;
+  text-align:left;
+}
+
+.volume-box input[type="range"]{
+  width:120px;
+  accent-color:#ff5a5a;
+  cursor:pointer;
+}
+
+.volume-box span{
+  font-size:12px;
+  min-width:38px;
+  text-align:right;
+}
+
+.perk-tooltip{
+  position:fixed;
+  min-width:260px;
+  max-width:420px;
+  padding:14px 16px;
+  border-radius:12px;
+  background:rgba(15,15,18,0.96);
+  border:1px solid rgba(255,255,255,0.18);
+  color:#fff;
+  box-shadow:0 10px 30px rgba(0,0,0,0.45);
+  z-index:99999;
+  pointer-events:none;
+  text-align:left;
+  line-height:1.5;
+}
+
+.perk-tooltip.hidden{
+  display:none;
+}
+
+.perk-tooltip-title{
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:8px;
+  color:#ffd66b;
+}
+
+.perk-tooltip-desc{
+  font-size:14px;
+  white-space:normal;
+  word-break:break-word;
+}
+
+</style>
+</head>
+
+<body>
+<div id="screenFlash" class="screen-flash"></div>
+
+<!-- 店内BGM -->
+<audio id="bgmSound" src="assets/sound/kankyo.mp3" loop></audio>
+<audio id="startSound" src="assets/sound/start.mp3"></audio>
+<audio id="stopSound" src="assets/sound/stop.mp3"></audio>
+<audio id="kakuteiSound" src="assets/sound/kakutei.mp3"></audio>
+<audio id="atariSound" src="assets/sound/atari.mp3"></audio>
+<audio id="doreyureSound" src="assets/sound/doreyure.mp3"></audio>
+<audio id="hakaiSound" src="assets/sound/hakai.mp3"></audio>
+
+<div id="app-stage">
+  <div id="game-root">
+    <div class="slot-ui">
+
+  <div class="status-badge" id="shuffleStatus">待機中</div>
+
+  <video
+    id="parkChanceVideo"
+    class="slot-chance-video"
+    muted
+    loop
+    playsinline
+    preload="auto"
+    style="display:none;"
+  >
+    <source src="assets/park_chance.mp4" type="video/mp4">
+  </video>
+
+  <img src="assets/DBD_SLOT_base.png" class="slot-base" alt="DBD slot base">
+  <img src="assets/ITA.png" class="slot-ita" id="slotIta" alt="ITA">
+
+  <!-- 上部ヘッダー -->
+  <div class="slot-overlay-header">
+  <div class="slot-lcd-ui">
+    <div class="slot-control-row">
+  <button class="mode-btn slot-lcd-btn" onclick="goToSurvivorPage()">サバイバー用</button>
+  <button class="mini-sound-btn slot-lcd-btn" type="button" onclick="toggleKillerFilter()">所持キラー設定</button>
+  <button class="mini-sound-btn slot-lcd-btn" onclick="toggleBgm()" id="bgmBtn">🎵 BGM ON</button>
+  <button class="mini-sound-btn slot-lcd-btn" onclick="toggleSe()" id="seBtn">🔔 SE ON</button>
+  <button class="mini-sound-btn slot-lcd-btn" onclick="toggleAutoStop()" id="autoStopBtn">⏱ 自動停止 OFF</button>
+</div>
+
+    <div class="slot-volume-row">
+      <div class="volume-box">
+        <label for="bgmVolume">BGM</label>
+        <input type="range" id="bgmVolume" min="0" max="100" value="5" oninput="setBgmVolume(this.value)">
+        <span id="bgmVolumeText">5%</span>
+      </div>
+
+      <div class="volume-box">
+        <label for="seVolume">SE</label>
+        <input type="range" id="seVolume" min="0" max="100" value="10" oninput="setSeVolume(this.value)">
+        <span id="seVolumeText">10%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot-overlay-creator">
+    Created by
+    <a href="https://www.twitch.tv/papasan03" target="_blank">papasan03 (Twitch)</a>
+  </div>
+</div>
+
+  <!-- 所持キラー設定パネル -->
+  <div id="killerFilterPanel" class="killer-filter-panel hidden">
+    <div class="killer-filter-header">
+      <strong>ランダム対象キラー</strong>
+      <div class="killer-filter-actions">
+        <button class="control-btn small-btn" type="button" onclick="selectAllKillers()">全選択</button>
+        <button class="control-btn small-btn" type="button" onclick="clearAllKillers()">全解除</button>
+      </div>
+    </div>
+    <div id="killerCheckboxList" class="killer-checkbox-list"></div>
+  </div>
+
+  <!-- 右上キラーリール -->
+  <div class="killer-side-window">
+    <div class="reel killer-side-reel" id="killerFrame">
+      <div class="reel-track" id="killerReel"></div>
+    </div>
+  </div>
+
+  <!-- パークリール4つ -->
+  <div class="reel-window reel-pos1">
+    <div class="reel" id="frame1"><div class="reel-track" id="reel1"></div></div>
+  </div>
+
+  <div class="reel-window reel-pos2">
+    <div class="reel" id="frame2"><div class="reel-track" id="reel2"></div></div>
+  </div>
+
+  <div class="reel-window reel-pos3">
+    <div class="reel" id="frame3"><div class="reel-track" id="reel3"></div></div>
+  </div>
+
+  <div class="reel-window reel-pos4">
+    <div class="reel" id="frame4"><div class="reel-track" id="reel4"></div></div>
+  </div>
+
+  <!-- スタートレバー -->
+  <button class="slot-start-lever slot-start-pos" onclick="startShuffle()" id="startLever" aria-label="スタート">
+    <img src="assets/start-lever.png" alt="start lever">
+  </button>
+
+  <!-- 停止ボタン -->
+  <div class="slot-stop-group-overlay">
+    <div class="stop-socket">
+      <button class="reel-stop-btn" id="stopBtn1" onclick="stopReel(0)" disabled aria-label="リール1停止">
+        <img src="assets/button.png" alt="stop">
+      </button>
+    </div>
+
+    <div class="stop-socket">
+      <button class="reel-stop-btn" id="stopBtn2" onclick="stopReel(1)" disabled aria-label="リール2停止">
+        <img src="assets/button.png" alt="stop">
+      </button>
+    </div>
+
+    <div class="stop-socket">
+      <button class="reel-stop-btn" id="stopBtn3" onclick="stopReel(2)" disabled aria-label="リール3停止">
+        <img src="assets/button.png" alt="stop">
+      </button>
+    </div>
+
+    <div class="stop-socket">
+      <button class="reel-stop-btn" id="stopBtn4" onclick="stopReel(3)" disabled aria-label="リール4停止">
+        <img src="assets/button.png" alt="stop">
+      </button>
+    </div>
+  </div>
+<div class="result-area">
+  <input id="resultText" type="text" readonly placeholder="ストップするとここにキラー名と4つのパーク名が出ます">
+  <button class="control-btn" onclick="copyResult()">コピー</button>
+</div>
+
+    </div> <!-- .slot-ui -->
+  </div>   <!-- #game-root -->
+</div>     <!-- #app-stage -->
+
+<script>
+const bgmSound   = document.getElementById('bgmSound');
+const startSound = document.getElementById('startSound');
+const stopSound  = document.getElementById('stopSound');
+const kakuteiSound = document.getElementById('kakuteiSound');
+const atariSound   = document.getElementById('atariSound');
+const uraAtariSound = new Audio("assets/sound/atari1.mp3");
+const uraHazureSound = new Audio("assets/sound/hazure1.mp3");
+const gekiatuSound = new Audio("assets/sound/gekiatu.mp3");
+const doreyureSound = document.getElementById('doreyureSound');
+const hakaiSound = document.getElementById('hakaiSound');
+const parkChanceVideo = document.getElementById('parkChanceVideo');
+const slotIta = document.getElementById('slotIta');
+const KILLER_ITEM_HEIGHT = 138;
+const KILLER_VIEW_HEIGHT = 138;
+const KILLER_CENTER_OFFSET = 0;
+const KILLER_COPY_COUNT = 5;
+const KILLER_MIDDLE_COPY = 2;
+
+const killerState = {
+  y: 0,
+  speed: 0,
+  phase: "idle", // idle / spinning / stopping / stopped
+  finalKiller: null,
+  stopTargetY: null,
+  stopFromY: 0,
+  stopStartMs: null,
+  stopEndMs: null,
+  stopRequested: false
+};
+
+    // ------------------------------
+    // キラー（ポートレート）ランダム
+    // フォルダ: killer/ に画像を置くこと
+    // ------------------------------
+    const killerFiles = [
+      "K01_TheTrapper_Portrait.png",
+      "K02_TheWraith_Portrait.png",
+      "K03_TheHillbilly_Portrait.png",
+      "K04_TheNurse_Portrait.png",
+      "K05_TheHag_Portrait.png",
+      "K06_TheShape_Portrait.png",
+      "K07_TheDoctor_Portrait.png",
+      "K08_TheHuntress_Portrait.png",
+      "K09_TheCannibal_Portrait.png",
+      "K10_TheNightmare_Portrait.png",
+      "K11_ThePig_Portrait.png",
+      "K12_TheClown_Portrait.png",
+      "K13_TheSpirit_Portrait.png",
+      "K14_TheLegion_Portrait.png",
+      "K15_ThePlague_Portrait.png",
+      "K16_TheGhostface_Portrait.png",
+      "K17_TheDemogorgon_Portrait.png",
+      "K18_TheOni_Portrait.png",
+      "K19_TheDeathslinger_Portrait.png",
+      "K20_TheExecutioner_Portrait.png",
+      "K21_TheBlight_Portrait.png",
+      "K22_TheTwins_Portrait.png",
+      "K23_TheTrickster_Portrait.png",
+      "K24_TheNemesis_Portrait.png",
+      "K25_TheCenobite_Portrait.png",
+      "K26_TheArtist_Portrait.png",
+      "K27_TheOnryo_Portrait.png",
+      "K28_TheDredge_Portrait.png",
+      "K29_TheMasterMind_Portrait.png",
+      "K30_TheKnight_Portrait.png",
+      "K31_TheSkullMerchant_Portrait.png",
+      "K32_TheSingularity_Portrait.png",
+      "K33_TheXenomorph_Portrait.png",
+      "K34_TheYerkes_Portrait.png",
+      "K35_TheUnknown_Portrait.png",
+      "K36_TheLich_Portrait.png",
+      "K37_TheDracula_Portrait.png",
+      "K38_TheHoundmaster_Portrait.png",
+      "T_UI_K41_TheKrasue_Portrait.png",
+      "T_UI_K42_TheFirst_Portrait.png"
+    ];
+
+    // ざっくり日本語名（足りない分は英語が出る）
+    const killerNameJP = {
+      "TheTrapper": "トラッパー",
+      "TheWraith": "レイス",
+      "TheHillbilly": "ヒルビリー",
+      "TheNurse": "ナース",
+      "TheHag": "ハグ",
+      "TheShape": "シェイプ",
+      "TheDoctor": "ドクター",
+      "TheHuntress": "ハントレス",
+      "TheCannibal": "カニバル",
+      "TheNightmare": "ナイトメア",
+      "ThePig": "ピッグ",
+      "TheClown": "クラウン",
+      "TheSpirit": "スピリット",
+      "TheLegion": "リージョン",
+      "ThePlague": "プレイグ",
+      "TheGhostface": "ゴーストフェイス",
+      "TheDemogorgon": "デモゴルゴン",
+      "TheOni": "鬼",
+      "TheDeathslinger": "デススリンガー",
+      "TheExecutioner": "エクセキューショナー",
+      "TheBlight": "ブライト",
+      "TheTwins": "ツインズ",
+      "TheTrickster": "トリックスター",
+      "TheNemesis": "ネメシス",
+      "TheCenobite": "セノバイト",
+      "TheArtist": "アーティスト",
+      "TheOnryo": "怨霊",
+      "TheDredge": "ドレッジ",
+      "TheMasterMind": "ウェスカー",
+      "TheKnight": "ナイト",
+      "TheSkullMerchant": "スカルマーチャント",
+      "TheSingularity": "シンギュラリティ",
+      "TheXenomorph": "ゼノモーフ",
+      "TheYerkes": "チャッキー",
+      "TheUnknown": "アンノウン",
+      "TheLich": "リッチ",
+      "TheDracula": "ダークロード",
+      "TheHoundmaster": "ハウンドマスター",
+      "TheKrasue": "ガスー",
+      "TheFirst": "ザ・ファースト"
+    };
+const KILLER_STORAGE_KEY = "dbd_owned_killers_v1";
+
+function showPerkTooltip(park, mouseX, mouseY) {
+  const tooltip = document.getElementById("perkTooltip");
+  const title = document.getElementById("perkTooltipTitle");
+  const desc = document.getElementById("perkTooltipDesc");
+
+  if (!tooltip || !title || !desc || !park) return;
+
+  title.textContent = park.name || "";
+  desc.textContent = park.description || "説明なし";
+
+  tooltip.classList.remove("hidden");
+
+  const offset = 18;
+  const tooltipRect = tooltip.getBoundingClientRect();
+
+  let left = mouseX + offset;
+  let top = mouseY + offset;
+
+  if (left + tooltipRect.width > window.innerWidth - 12) {
+    left = mouseX - tooltipRect.width - offset;
+  }
+
+  if (top + tooltipRect.height > window.innerHeight - 12) {
+    top = window.innerHeight - tooltipRect.height - 12;
+  }
+
+  if (left < 12) left = 12;
+  if (top < 12) top = 12;
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+function hidePerkTooltip() {
+  const tooltip = document.getElementById("perkTooltip");
+  if (!tooltip) return;
+  tooltip.classList.add("hidden");
+}
+
+function canShowPerkTooltip() {
+  return (
+    reelLocked.every(v => v) &&
+    killerLocked &&
+    !isShuffling &&
+    !isStopping &&
+    !isUraProcessing &&
+    !isDoorChanceProcessing &&
+    !isFinalChecking
+  );
+}
+
+function attachPerkTooltipEvents(element, park) {
+  if (!element || !park) return;
+
+  element.onmouseenter = (e) => {
+    if (!canShowPerkTooltip()) return;
+    showPerkTooltip(park, e.clientX, e.clientY);
+  };
+
+  element.onmousemove = (e) => {
+    if (!canShowPerkTooltip()) {
+      hidePerkTooltip();
+      return;
+    }
+    showPerkTooltip(park, e.clientX, e.clientY);
+  };
+
+  element.onmouseleave = () => {
+    hidePerkTooltip();
+  };
+}
+
+function getAllKillers() {
+  return killerFiles.map(file => {
+    const code = parseKillerCode(file);
+    const name = killerNameJP[code] ?? code;
+    return { file, code, name, icon: "killer/" + file };
+  });
+}
+
+function loadOwnedKillers() {
+  const saved = localStorage.getItem(KILLER_STORAGE_KEY);
+
+  if (!saved) {
+    return new Set();
+  }
+
+  try {
+    const parsed = JSON.parse(saved);
+    if (Array.isArray(parsed)) {
+      return new Set(parsed);
+    }
+  } catch (e) {}
+
+  return new Set();
+}
+
+function saveOwnedKillers(set) {
+  localStorage.setItem(KILLER_STORAGE_KEY, JSON.stringify([...set]));
+}
+
+let seVolume = 1.0;
+let ownedKillers = loadOwnedKillers();
+
+
+    let currentKiller = null;
+    let bgmEnabled = true;
+    let seEnabled = true;
+
+    function parseKillerCode(file){
+      // "K01_TheTrapper_Portrait.png" -> "TheTrapper"
+      // "T_UI_K41_TheKrasue_Portrait.png" -> "TheKrasue"
+      return file
+        .replace(/_Portrait\.png$/,"")
+        .replace(/^T_UI_K\d+_/,"")
+        .replace(/^K\d+_/,"");
+    }
+
+function getAvailableKillers() {
+  const allKillers = getAllKillers();
+  return allKillers.filter(killer => ownedKillers.has(killer.file));
+}
+
+function updateKillerColumnVisibility() {
+  const killerFrame = document.getElementById("killerFrame");
+  if (!killerFrame) return;
+
+  const availableKillers = getAvailableKillers();
+
+  if (availableKillers.length === 0) {
+    updateKillerReelVisual(null, true);
+  }
+}
+
+function renderKillerCheckboxes() {
+  const list = document.getElementById("killerCheckboxList");
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  const allKillers = getAllKillers();
+
+  allKillers.forEach(killer => {
+    const label = document.createElement("label");
+    label.className = "killer-checkbox-item";
+
+    const checked = ownedKillers.has(killer.file) ? "checked" : "";
+
+    label.innerHTML = `
+      <input type="checkbox" data-file="${killer.file}" ${checked}>
+      <span>${killer.name}</span>
+    `;
+
+    const checkbox = label.querySelector("input");
+
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        ownedKillers.add(killer.file);
+      } else {
+        ownedKillers.delete(killer.file);
+      }
+
+      saveOwnedKillers(ownedKillers);
+
+      const availableKillers = getAvailableKillers();
+      finalKiller = availableKillers.length > 0 ? pickRandomKiller() : null;
+      updateKillerReelVisual(finalKiller, true);
+    });
+
+    list.appendChild(label);
+  });
+
+  const availableKillers = getAvailableKillers();
+  finalKiller = availableKillers.length > 0 ? pickRandomKiller() : null;
+  updateKillerReelVisual(finalKiller, true);
+}
+
+function toggleKillerFilter() {
+  const panel = document.getElementById("killerFilterPanel");
+  if (!panel) return;
+  panel.classList.toggle("hidden");
+}
+
+function selectAllKillers() {
+  ownedKillers = new Set(killerFiles);
+  saveOwnedKillers(ownedKillers);
+  renderKillerCheckboxes();
+}
+
+function pickRandomKiller() {
+  const available = getAvailableKillers();
+  if (available.length === 0) {
+    return null;
+  }
+  return available[Math.floor(Math.random() * available.length)];
+}
+
+function clearAllKillers() {
+  ownedKillers = new Set();
+  saveOwnedKillers(ownedKillers);
+  renderKillerCheckboxes();
+}  
+function setStatus(text) {
+  const el = document.getElementById("shuffleStatus");
+  if (el) el.textContent = text;
+}
+
+function toggleBgm() {
+  bgmEnabled = !bgmEnabled;
+  const btn = document.getElementById("bgmBtn");
+  if (btn) btn.textContent = bgmEnabled ? "🎵 BGM ON" : "🎵 BGM OFF";
+
+  if (!bgmEnabled) {
+    bgmSound?.pause();
+  } else {
+    bgmSound?.play().catch(() => {});
+  }
+}
+
+function toggleSe() {
+  seEnabled = !seEnabled;
+
+  const btn = document.getElementById("seBtn");
+  if (btn) {
+    btn.textContent = seEnabled ? "🔔 SE ON" : "🔔 SE OFF";
+  }
+
+  if (!seEnabled) {
+    [
+  startSound,
+  stopSound,
+  kakuteiSound,
+  atariSound,
+  uraAtariSound,
+  uraHazureSound,
+  gekiatuSound,
+  doreyureSound,
+  hakaiSound
+].forEach(audio => {
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+    });
+  }
+}
+
+function clearAutoStopTimers() {
+  autoStopTimers.forEach(id => clearTimeout(id));
+  autoStopTimers = [];
+  autoStopSessionId++;
+}
+
+function updateAutoStopButton() {
+  const btn = document.getElementById("autoStopBtn");
+  if (!btn) return;
+
+  btn.textContent = autoStopEnabled ? "⏱ 自動停止 ON" : "⏱ 自動停止 OFF";
+  btn.style.background = autoStopEnabled
+    ? "rgba(180,40,40,0.75)"
+    : "rgba(0,0,0,0.55)";
+}
+
+function toggleAutoStop() {
+  autoStopEnabled = !autoStopEnabled;
+  updateAutoStopButton();
+  localStorage.setItem("dbd_killer_auto_stop_enabled", autoStopEnabled ? "1" : "0");
+
+  if (!autoStopEnabled) {
+    clearAutoStopTimers();
+  }
+}
+
+function getRandomAutoStopDelayMs() {
+  return 300 + Math.floor(Math.random() * 1200);
+}
+
+function scheduleAutoStopSequence() {
+  if (!autoStopEnabled) return;
+  if (!isShuffling) return;
+
+  clearAutoStopTimers();
+
+  const sessionId = autoStopSessionId;
+  let totalDelay = 0;
+
+  for (let i = 0; i < REEL_COUNT; i++) {
+    if (isFreeReel(i)) continue;
+
+    totalDelay += getRandomAutoStopDelayMs();
+
+    const timerId = setTimeout(() => {
+      if (sessionId !== autoStopSessionId) return;
+      if (!autoStopEnabled) return;
+      if (!isShuffling) return;
+      if (isUraProcessing || isDoorChanceProcessing || isFinalChecking) return;
+      if (reelLocked[i]) return;
+
+      stopReel(i);
+    }, totalDelay);
+
+    autoStopTimers.push(timerId);
+  }
+}
+
+function setBgmVolume(value) {
+  const volume = Number(value) / 100;
+  if (bgmSound) bgmSound.volume = volume;
+
+  const text = document.getElementById("bgmVolumeText");
+  if (text) text.textContent = `${value}%`;
+}
+
+function setSeVolume(value) {
+  seVolume = Number(value) / 100;
+
+  const text = document.getElementById("seVolumeText");
+  if (text) text.textContent = `${value}%`;
+}
+
+const SE_BASE_VOLUME = {
+  start: 0.2,
+  stop: 0.2,
+  kakutei: 0.4,
+  atari: 0.4,
+  uraAtari: 0.2,
+  uraHazure: 0.5,
+  gekiatu: 0.05,
+  doreyure: 0.6,
+  hakai: 0.2
+};
+
+    // 任意のサバイバーパークの例（もっと増やしてOK）
+    const allParks = [     
+{
+  name: "不安の元凶",
+  description: "脅威範囲内にいる生存者は、修理または治療スキルチェック発生率が10%上昇する。発生したスキルチェックの成功範囲が(40・50・60)%減少する。",
+  icon: "Perks/iconPerks_UnnervingPresence.png"
+},
+{
+  name: "野蛮な力",
+  description: "倒されたパレット、破壊可能な壁、発電機を破壊する速度が(10・15・20)%上昇する。",
+  icon: "Perks/iconPerks_BrutalStrength.png"
+},
+{
+  name: "興奮",
+  description: "生存者を運んでいる間の移動速度が(6・12・18)%上昇する。生存者を運んでいる間、脅威範囲が12メートル増加する。",
+  icon: "Perks/iconPerks_Agitation.png"
+},
+{
+  name: "捕食者",
+  description: "生存者が追跡から逃れると、その生存者のオーラが4秒間表示される。このパークには(60・50・40)秒間のクールダウンがある。",
+  icon: "Perks/iconPerks_Predator.png"
+},
+{
+  name: "血の追跡者",
+  description: "新鮮な血痕が、通常よりかなり識別できるようになり、追跡可能時間が(2・3・4)秒増加する。",
+  icon: "Perks/iconPerks_Bloodhound.png"
+},
+{
+  name: "闇より出でし者",
+  description: "何らかの手段で目眩まし状態にさせられると、(6・8・10)%の迅速を10秒間得る。",
+  icon: "Perks/iconPerks_Shadowborn.png"
+},
+{
+  name: "不屈",
+  description: "パレットで怯む時間が(40・45・50)%減少する。生存者を担いでいる間は効果がない。",
+  icon: "Perks/iconPerks_Enduring.png"
+},
+{
+  name: "光より出でし者",
+  description: "懐中電灯や爆竹、スタングレネード、地雷爆破による目眩ましに影響を受けなくなる。あなたに 目眩まし を試みる生存者のオーラが(6・8・10)秒間視えるようになる。",
+  icon: "Perks/iconPerks_Lightborn.png"
+},
+{
+  name: "ガラクタいじり",
+  description: "発電機の修理が70%まで完了すると大きな通知音が発生し、(12・14・16)秒間、 探知不可 のステータス効果を得る。この効果は発電機1台につき一度のみ発動可能。",
+  icon: "Perks/iconPerks_Tinkerer.png"
+},
+{
+  name: "喘鳴",
+  description: "苦痛にあえぐ生存者の呼吸音が(30・40・50)%大きくなり、通常の呼吸音が(15・20・25)%大きくなる。",
+  icon: "Perks/iconPerks_Stridor.png"
+},
+{
+  name: "死恐怖症",
+  description: "生存者が負傷または瀕死状態に陥るか、フックに吊るされるたび、生存者全員の修理・フック破壊・トーテム浄化速度が(1・1.5・2) %低下する。負傷または瀕死状態に陥ったか、フックに吊るされた生存者が4人いる場合、修理・フック破壊・トーテム浄化の速度が12%追加される。",
+  icon: "Perks/iconPerks_Thatanophobia.png"
+},
+{
+  name: "看護婦の使命",
+  description: "(28・30・32)メートル以内にいる治療中、または治療を受けている負傷した生存者のオーラが視える。",
+  icon: "Perks/iconPerks_ANursesCalling.png"
+},
+{
+  name: "第三の封印",
+  description: "オーラ可視能力を妨げる呪い。呪いのトーテムが活動している間、通常攻撃または特殊攻撃が命中した生存者に 目眩まし のステータス効果を付与する。呪いの効果は最後に攻撃した(2・3・4)人に有効。 呪いの効果は、紐付けられた呪いのトーテムが残っているかぎり持続する。",
+  icon: "Perks/DLC3/iconPerks_TheThirdSeal.png"
+},
+{
+  name: "破滅",
+  description: "全ての発電機が呪術：破滅の影響を受ける。生存者による修理が行われていない間、即座に発電機の修理進行が通常の後退速度の(100・125・150)%で自動的に後退する。",
+  icon: "Perks/DLC3/iconPerks_Ruin.png"
+},
+{
+  name: "貪られる希望",
+  description: "24メートル以上離れている生存者がフックから救助されると、「貪られる希望」に1トークンが付与される。 2トークン：生存者を吊るすと10秒後に10秒間(3・4・5)%の 迅速 効果を受ける 3トークン：生存者が 無防備 効果に苦しむ 5トークン：直接生存者を仕留められるようになる 呪いの効果は、紐付けられた呪いのトーテムが残っているかぎり持続する。 圧倒的存在感 妨害・デバフ",
+  icon: "Perks/DLC3/iconPerks_DevourHope.png"
+},
+{
+  name: "圧倒的存在感",
+  description: "自分の32メートル以内で生存者がアイテムを使用し始めると、その生存者が 疲労 を15秒間得る。 自分の32メートル以内で生存者が 疲労 を得ると、最も近くにいる 疲労 状態の生存者のオーラが（2・3・4）秒間視える。 このパークには25秒間のクールダウンがある。",
+  icon: "Perks/DLC4/iconPerks_OverwhelmingPresence.png"
+},
+{
+  name: "観察＆虐待",
+  description: "生存者を追跡中、脅威範囲が（5・10・15）%増加する。追跡中以外は脅威範囲が（15・20・25）%減少する。",
+  icon: "Perks/DLC4/iconPerks_MonitorAndAbuse.png"
+},
+{
+  name: "オーバーチャージ",
+  description: "発電機破壊アクションで発電機を過充電させる。次にその発電機に接触した生存者は難しいスキルチェックに直面する。スキルチェックが失敗した場合、発電機の進行度が(2・3・4)%追加で減少する。 スキルチェックが成功した場合、発電機は進行しないが、発電機の爆発は回避される。 オーバーチャージが適用された発電機は、30秒間修理進行度の後退速度が通常の85%から130%に上昇する。",
+  icon: "Perks/DLC4/iconPerks_GeneratorOvercharge.png"
+},
+{
+  name: "最後のお楽しみ",
+  description: "1人の生存者に執着する。 オブセッション以外の生存者に通常攻撃を命中させる度にトークンを1個獲得する。1トークンにつき、通常攻撃成功後のクールダウンが4%ずつ減少する。トークンは最大(6・7・8)個まで獲得できる。 オブセッションが通常攻撃または特殊攻撃を命中させると2個のトークンを失う。オブセッションが処刑されるか死亡すると、トークンを獲得できない。",
+  icon: "Perks/DLC2/iconPerks_SaveTheBestForLast.png"
+},
+{
+  name: "弄ばれる獲物",
+  description: "1人の生存者に執着する。オブセッション状態の生存者を追いかけて取り逃がす度に、トークンを獲得する。最大トークン数は3。 1トークンにつき移動速度が(3・4・5)%ずつ上昇する。 通常攻撃または特殊攻撃を実行するたびに1トークンを消費する。",
+  icon: "Perks/DLC2/iconPerks_PlayWithYourFood.png"
+},
+{
+  name: "消えゆく灯",
+  description: "1人の生存者に執着する。オブセッション状態の生存者は、フック救助の速度と他の生存者の治療速度が33%上昇する。オブセッション状態でない生存者をフックに吊るした時に、オブセッション状態の生存者がいればトークンを1つ獲得する。 オブセッション状態の生存者がいる場合、オブセッション状態でない生存者は修理、治療、破壊のアクション速度が1トークンごとに(2・2.5・3)%の低下する。",
+  icon: "Perks/DLC2/iconPerks_DyingLight.png"
+},
+{
+  name: "猛獣",
+  description: "血の渇望が発動すると、 探知不可 のステータス効果を(30・35・40)秒間得る。",
+  icon: "Perks/DLC5/iconPerks_BeastOfPrey.png"
+},
+{
+  name: "縄張り意識",
+  description: "あなたが地下室の入り口から24メートル以上離れているとき、地下室に入った生存者のオーラが6秒間視えるようになる。縄張り意識は45秒間のクールタイムがある。",
+  icon: "Perks/DLC5/iconPerks_TerritorialImperative.png"
+},
+{
+  name: "女狩人の子守唄",
+  description: "生存者が治療中または修理中のスキルチェックに失敗したとき、進行度に(2・4・6)%の後退ペナルティを受ける。 生存者が吊るされる度に、女狩人の子守唄は力を増す。治療中または修理中のスキルチェック警告音に以下の影響をおよぼす。 1〜4トークン:スキルチェックとスキルチェック前の警告音の間が短くなる 5トークン:スキルチェック前の警告音が無くなる 呪いの効果は、紐付けられた呪いのトーテムが残っている限り持続する。",
+  icon: "Perks/DLC5/iconPerks_HuntressLullaby.png"
+},
+{
+  name: "ノックアウト",
+  description: "生存者がパレットを倒したとき、その生存者が6秒以内にそこから6メートル以上離れると5%の 妨害 効果を(3・4・5)秒得る。",
+  icon: "Perks/Cannibal/iconPerks_KnockOut.png"
+},
+{
+  name: "バーベキュー＆チリ",
+  description: "生存者をフックに吊るした後5秒間、フックから(60・50・40)メートル以上離れた全ての生存者のオーラを視ることができる。 フランクリンの悲劇 妨害・デバフ オーラ",
+  icon: "Perks/Cannibal/iconPerks_BBQAndChili.png"
+},
+{
+  name: "フランクリンの悲劇",
+  description: "あなたの通常攻撃を受けた生存者は衝撃でアイテムを落とす。 64メートル以内の地面にあるアイテムが白いオーラで表示される。",
+  icon: "Perks/Cannibal/iconPerks_FranklinsLoss.png"
+},
+{
+  name: "ファイヤー・アップ",
+  description: "生存者が発電機の修理を完了するたびに、このパークは強化される。 ・各発電機の修理が完了すると(4・5・6)%の重複可能な強化効果を得て、儀式の残り時間中は拾う、落とす、乗り越え、発電機破壊、パレットと破壊可能な壁の破壊速度が上昇する。",
+  icon: "Perks/England/iconPerks_FireUp.png"
+},
+{
+  name: "リメンバー・ミー",
+  description: "オブセッション状態の生存者がダメージを受けるたびにトークンが1個貯まる（最大5個まで）。 トークン1個につき、他の生存者が脱出ゲートを開放する速度が30％低下する。",
+  icon: "Perks/England/iconPerks_RememberMe.png"
+},
+{
+  name: "血の番人",
+  description: "脱出ゲートが開放されることで発動する。出口エリア内にいる生存者のオーラを視ることができる。1マッチに1回だけ、血の番人が発動中に生存者をフックに吊るすと、エンティティを召喚して全ての出口を(30・40・60)秒間封鎖する。全ての生存者に対して有効。",
+  icon: "Perks/England/iconPerks_BloodWarden.png"
+},
+{
+  name: "処刑人の妙技",
+  description: "生存者がフックの破壊工作を開始すると通知を受け取る。 生存者を運んでいる間、悶絶のフックから(12・14・16)メートル以内にいる生存者のオーラが視える",
+  icon: "Perks/Finland/iconPerks_HangmansTrick.png"
+},
+{
+  name: "監視",
+  description: "修理進行度が後退しているすべての発電機が白いオーラで強調される。発電機の修理進行度の後退が食い止められると、(8・12・16)秒間黄色いオーラで強調される。発電機の修理音が聞こえる範囲が8メートル広がる。",
+  icon: "Perks/Finland/iconPerks_Surveillance.png"
+},
+{
+  name: "選択は君次第だ",
+  description: "生存者があなたから32メートル以上離れたフックに吊られた仲間を救助すると、選択は君次第だが発動して救助者が叫び、(40・50・60)秒間 無防備 のステータス効果を受ける。選択は君次第だは(40・50・60)秒間のクールダウンがある。",
+  icon: "Perks/Finland/iconPerks_MakeYourChoice.png"
+},
+{
+  name: "まやかし",
+  description: "障害物を乗り越える速度が(5・10・15)%増加する。乗り越えを行うと、エンティティがその場所を(8・12・16)秒間封鎖する。同時に封鎖できる場所は1ヶ所のみ。封鎖は生存者のみ有効。パレットには効果が適用されない。",
+  icon: "Perks/Guam/iconPerks_Bamboozle.png"
+},
+{
+  name: "ピエロ恐怖症",
+  description: "脅威範囲内の生存者による治療速度が(30・40・50)%低下し、スキルチェックの速度が50%上昇する。",
+  icon: "Perks/Guam/iconPerks_Coulrophobia.png"
+},
+{
+  name: "イタチが飛び出した",
+  description: "生存者を吊るすと、次に破壊する発電機の修理進行度が全体の15%減少する。発電機破壊アクションの後、発電機の進行度は通常通り減少していく。イタチが飛び出したは、生存者が吊るされた後(35・40・45) 秒間有効。",
+  icon: "Perks/Guam/iconPerks_PopGoesTheWeasel.png"
+},
+{
+  name: "怨霊の怒り",
+  description: "パレットを(4・3・2)枚破壊すると、次にパレットで怯んだ時にエンティティによって即座にパレットが破壊される。怯み効果は通常通り受ける。",
+  icon: "Perks/Haiti/iconPerks_SpiritFury.png"
+},
+{
+  name: "霊障の地",
+  description: "罠が封じられた呪いのトーテムが2個生成される。生存者が罠の呪いのトーテムのいずれかを浄化すると、すべての生存者が(40・50・60)秒間、 無防備 状態に苦しむ。残りの罠の呪いのトーテムは即座に無力なトーテムになる。",
+  icon: "Perks/Haiti/iconPerks_HauntedGround.png"
+},
+{
+  name: "怨恨",
+  description: "1人の生存者に執着する。 発電機の修理が完了するたびに、オブセッションはあなたのオーラを(5・4・3)秒間視ることができる。発電機の修理が完了するたびに、すべての生存者の位置を3秒間探知できる。 脱出ゲートが通電すると、オブセッション対象者は 無防備 状態になって、殺害可能な状態になる。",
+  icon: "Perks/Haiti/iconPerks_Hatred.png"
+},
+{
+  name: "不協和音",
+  description: "2人以上の生存者が修理する(64・96・128)メートル以内の発電機が黄色のオーラで強調される。初めて強調された発電機は不協和音によって大きな音の通知が発動する。 発電機が範囲外になるか、2人以上の生存者によって修理されなくなった後もオーラが4秒間持続する。",
+  icon: "Perks/Kenya/iconPerks_Discordance.png"
+},
+{
+  name: "狂気の根性",
+  description: "生存者を運んでいる間、通常攻撃の失敗時のクールダウンがなくなり、通常攻撃の成功時、運んでいる生存者のもがきゲージが(2・3・4)秒間停止する。",
+  icon: "Perks/Kenya/iconPerks_MadGrit.png"
+},
+{
+  name: "アイアンメイデン",
+  description: "ロッカーを開ける速度が(30・40・50)%上昇する。 ロッカーから出た生存者は、30秒間 無防備 状態になり、4秒間位置が表示される。",
+  icon: "Perks/Kenya/iconPerks_IronMaiden.png"
+},
+{
+  name: "堕落の介入",
+  description: "儀式開始時に、一番離れた位置にある発電機3台がエンティティによって(80・100・120)秒間ブロックされる。 その間、ブロックされた発電機は修理ができない。ブロック中の発電機は白いオーラでハイライトされる。 堕落の介入はいずれかの生存者が瀕死状態に陥ると解除される。",
+  icon: "Perks/Mali/iconPerks_CorruptIntervention.png"
+},
+{
+  name: "伝播する怖気",
+  description: "生存者を瀕死状態にすると、脅威範囲内の生存者全員が叫び声をあげ、(4・5・6)秒間位置が通知される。",
+  icon: "Perks/Mali/iconPerks_InfectiousFright.png"
+},
+{
+  name: "闇の信仰心",
+  description: "1人の生存者に執着する。オブセッションが1段階負傷すると、(35・40・45)秒間、脅威範囲がオブセッションに移動して、範囲が40メートルになる。 効果が続く限り 探知不可 のステータス効果を得る。 脅威範囲が移動した生存者は、他の目的で「脅威範囲内にいる」とみなされる。",
+  icon: "Perks/Mali/iconPerks_DarkDevotion.png"
+},
+{
+  name: "地獄耳",
+  description: "自分から48メートル以内でせっかちな行動を行った生存者のオーラが8秒間見える。地獄耳は(60・45・30)秒ごとに1回のみ発動可能。",
+  icon: "Perks/Oman/iconPerks_ImAllEars.png"
+},
+{
+  name: "戦慄",
+  description: "生存者を担いだ後、生存者によって修理中でない発電機すべてがエンティティによりブロックされ、次の16秒間修理不能になる。ブロックされている発電機は白いオーラでハイライトされる。戦慄は(40・35・30)秒ごとに発動可能。",
+  icon: "Perks/Oman/iconPerks_ThrillingTremors.png"
+},
+{
+  name: "隠密の追跡",
+  description: "1人の生存者に執着する。オブセッション状態の生存者をフックに吊るすと、探知不可ステータス効果と10%の迅速ステータス効果を(14・16・18)秒間得る。 オブセッション状態の生存者をフックから救助した生存者は、オブセッション状態になる。 複数の生存者が同時にオブセッション状態になることはない。",
+  icon: "Perks/Oman/iconPerks_FurtiveChase.png"
+},
+{
+  name: "サージ",
+  description: "通常攻撃で生存者を瀕死状態にすると、32メートル以内の範囲にある全ての発電機が即座に爆発し、修理の進行度が減少し始める。サージの影響を受けた発電機は進行度が即座に(6・7・8)%減少する。 マインドブレーカー (不安を煽る者) 妨害・デバフ チェイス",
+  icon: "Perks/Qatar/iconPerks_Surge.png"
+},
+{
+  name: "マインドブレーカー",
+  description: "発電機を修理中の生存者は目眩ましと 疲労 のステータス効果を受ける。 生存者が発電機を修理している間、すでに起動中の疲労のタイマーはすべて停止する。修理を終えた生存者はその後(3・4・5) 秒間 目眩まし と疲労ステータス効果を受ける。",
+  icon: "Perks/Qatar/iconPerks_MindBreaker.png"
+},
+{
+  name: "閉所恐怖症",
+  description: "発電機の修理が完了するたびに、全ての窓と乗り越え可能な地点が(20・25・30)秒間封鎖され、すべての生存者が乗り越え不可になる。 封鎖中、あなたには無慈悲の極地で封鎖された場所のオーラが見える。",
+  icon: "Perks/Qatar/iconPerks_CruelConfinement.png"
+},
+{
+  name: "残心の戦術",
+  description: "32メートル以内のパレットと乗り越え障害物のオーラを表示する。パレットを倒した生存者のオーラが自分に(3・4・5)秒間表示される。 血の共鳴 妨害・デバフ チェイス",
+  icon: "Perks/Sweden/iconPerks_ZanshinTactics.png"
+},
+{
+  name: "血の共鳴",
+  description: "1人の生存者をフックに吊るすと、その他の負傷した生存者全員が 出血 と 疲労 のステータス効果に30秒間苦しむ。",
+  icon: "Perks/Sweden/iconPerks_BloodEcho.png"
+},
+{
+  name: "天誅",
+  description: "パレットやロッカーを使って目くらましや怯ませてくる生存者はあなたのオブセッションとなる。新たな生存者がオブセッションになるときは毎回「 無感覚(忘却) 」状態となり、その効果が(40・50・60)秒継続する。また生存者のオーラが8秒間視えるようになる。 殺人鬼のオブセッションになる生存者は1回に1人のみ。",
+  icon: "Perks/Sweden/iconPerks_Nemesis.png"
+},
+{
+  name: "囁き",
+  description: "生存者から(48・40・32)メートル以内にいると、時々エンティティの囁きが聞こえるようになる。", 
+  icon: "Perks/iconPerks_Whispers.png"
+},
+{
+  name: "異形の祭壇",
+  description: "悶絶のフックに吊られた生存者は、殺人鬼が周囲24メートル以内にいないとき、エンティティの進行速度が(10・15・20)%上昇する。地下室の固有フックが悶絶のフックの効果を得る。",
+  icon: "Perks/iconPerks_MonstrousShrine.png"
+},
+{
+  name: "苦悶の根源",
+  description: "脅威範囲が(20・25・30)%増加する。", 
+  icon: "Perks/iconPerks_Distressing.png"
+},
+{
+  name: "憎悪の囁き",
+  description: "発電機の修理が完了する度、修理完了した発電機の16メートル以内にいる生存者が5秒間表示される。最後の発電機の修理が完了すると、全ての生存者のオーラが(5・7・10)秒間表示される。",
+  icon: "Perks/iconPerks_BitterMurmur.png"
+},
+{
+  name: "忍び寄る者",
+  description: "自分のオーラが生存者に視える間、その生存者のオーラが自分に視える。 （40・35・30）秒ごとに、最も追跡時間の短い生存者に自分のオーラが3秒間表示される。",
+  icon: "Perks/iconPerks_Deerstalker.png"
+},
+{
+  name: "誰も死から逃れられない",
+  description: "脱出ゲートが通電したとき、もし無力なトーテムがマップ上に残っていれば、この呪いが適用される。この呪いが発動中 生存者が 無防備 のステータス効果に苦しむ 移動速度が(2・3・4)%上昇する 呪いの効果が生存者に明かされると、その呪いのトーテムのオーラが4メートルの範囲で生存者に表示されるようになる。このオーラ可視範囲は、30秒で徐々に24メートル範囲まで拡大する。 呪いの効果は、紐付けられた呪いのトーテムが残っているかぎり持続する。",
+  icon: "Perks/iconPerks_NoOneEscapesDeath.png"
+},
+{
+  name: "狩りの興奮",
+  description: "マップ上に残っている無力、および呪いのトーテム1つ毎にトークンを得る。 生存者によるトーテムの浄化と清めの速度が1トークンにつき(8・10・12)%減少する 呪いの効果は、紐付けられた呪いのトーテムが残っているかぎり持続する。",
+  icon: "Perks/DLC3/iconPerks_ThrillOfTheHunt.png"
+},
+{
+  name: "狡猾",
+  description: "(3・2・1)秒静止すると、再度動くかアクションを行うまで 探知不可 のステータス効果を得る。",
+  icon: "Perks/iconPerks_Insidious.png"
+},
+{
+  name: "鋼の握力",
+  description: "生存者のもがく効果が75%減少する。抜け出すために必要な時間が(4・8・12)%増加する。 ",
+  icon: "Perks/iconPerks_IronGrasp.png"
+},
+{
+  name: "ずさんな肉屋",
+  description: "通常攻撃で負傷した生存者に、90秒間 出血 と 重傷 のステータス効果を与える。 出血によって治療の進行度が後退する速度が(15・20・25)％上昇する。 ",
+  icon: "Perks/iconPerks_SloppyButcher.png"
+},
+{
+  name: "影の密偵",
+  description: "(20・28・36)メートル以内にいるカラスが鳴くと、100%の確率で目で見て分かるサインを送ってくる。影の中の密偵には5秒間のクールダウンがある。 ",
+  icon: "Perks/iconPerks_SpiesFromTheShadows.png"
+},
+{
+  name: "無慈悲",
+  description: "攻撃失敗時のクールダウンが(20・25・30)%減少する。",
+  icon: "Perks/iconPerks_Unrelenting.png"
+},
+{
+  name: "変速機",
+  description: "何らかの手段で生存者が1段階負傷すると変速機が30秒間発動する。 変速機が発動中に生存者が修理のスキルチェックでグッドを出すと、その生存者のオーラが(6・7・8)秒視える。",
+  icon: "Perks/Ukraine/iconPerks_GearHead.png"
+},
+{
+  name: "死人のスイッチ",
+  description: "生存者をフックに吊るしたとき、死人のスイッチが発動する。そのあと最初に生存者が発電機の修理を中断した際、発電機はエンティティによって(25・30・35)秒間ブロックされる。 ブロックされた発電機は白いオーラで強調表示される。 死人のスイッチは発電機をブロックしている間は再び発動しない。",
+  icon: "Perks/Ukraine/iconPerks_DeadManSwitch.png"
+},
+{
+  name: "報復",
+  description: "無力なトーテムか呪いのトーテムにアクションを行った生存者は、(40・50・60)秒間 無感覚(忘却) のステータス効果に苦しむ。これを含む呪いのトーテムが浄化されると、すべての生存者のオーラが20秒間視えるようになる。",
+  icon: "Perks/Ukraine/iconPerks_HexRetribution.png"
+},
+{
+  name: "強制苦行",
+  description: "味方の代わりに攻撃を受けた生存者は(60・70・80)秒間、 衰弱 のステータス効果に苦しめられる。",
+  icon: "Perks/Wales/iconPerks_ForcedPenance.png"
+},
+{
+  name: "煩悶のトレイル",
+  description: "発電機を破壊すると、発電機の修理進行度の後退が止まるまで 探知不可 になる。この間、その発電機の黄色いオーラが生存者に視えるようになる。 この効果は(60・45・30)秒ごとに1回のみ発動する。",
+  icon: "Perks/Wales/iconPerks_TrailOfTorment.png"
+},
+{
+  name: "デスバウンド",
+  description: "生存者が別の生存者を回復させると、叫び声を上げてデスバウンドが発動する。治療を行った生存者が、治療した生存者から(12・8・4)メートル以上離れると、 無感覚(忘却) のステータス効果に苦しむ。これは治療を行った者が1段階負傷するまで続く。",
+  icon: "Perks/Wales/iconPerks_Deathbound.png"
+},
+{
+  name: "ドラゴンの掌握",
+  description: "発電機を破壊した後の30秒間で最初にその発電機にアクションを行った生存者は叫び声を上げ、4秒間位置が判明し、60秒間 無防備 のステータス効果を受ける。 ドラゴンの掌握には(60・45・30)秒間のクールダウンが発生する。",
+  icon: "Perks/Yemen/iconPerks_DragonsGrip.png"
+},
+{
+  name: "血の恩恵",
+  description: "生存者を負傷させると、その生存者の(24・28・32)メートル以内にあるパレットが15秒間エンティティによって固定される。固定されたパレットを倒すことはできない。 呪いの効果は、紐付けられた呪いのトーテムが残っている限り持続する。",
+  icon: "Perks/Yemen/iconPerks_HexBloodFavor.png"
+},
+{
+  name: "不死",
+  description: "呪術：不死の発動中、いずれかの無力のトーテムの(2・3・4)メートル以内にいる生存者のオーラが視える。 それとは別の呪いのトーテムを浄化するとそのトーテムの呪いは呪術：不死のトーテムに移動し、呪術：不死の呪いを解く。移動された呪いにあったトークンも一緒に移動する。 溜め込み屋 チェスト 索敵",
+  icon: "Perks/Yemen/iconPerks_HexUndying.png"
+},
+{
+  name: "溜め込み屋",
+  description: "(32・48・64)m以内でチェストにアクションを行うかアイテムを拾った生存者の位置が判明する。儀式の開始時点で、マップ上に最大2個のチェストが追加で出現する。",
+  icon: "Perks/Aurora/iconPerks_Hoarder.png"
+},
+{
+  name: "迫害",
+  description: "発電機を破壊すると、他のランダムな発電機の進行度が最大4台まで後退し始める。これらの発電機が修理中の場合、修理をしている生存者に難しいスキルチェックが発生する。迫害は(45・40・35)秒のクールダウンがある。",
+  icon: "Perks/Aurora/iconPerks_Oppression.png"
+},
+{
+  name: "とどめの一撃",
+  description: "発電機の修理が完了するたびに、とどめの一撃の力が高まる。2トークンを獲得する（最大5トークンまで）。 1トークンを使用すると、次の突進攻撃の距離が (70・75・80)%増加する。",
+  icon: "Perks/Aurora/iconPerks_CoupDeGrace.png"
+},
+{
+  name: "スターに憧れて",
+  description: "生存者を担いでいる時、脅威範囲内にいるその他の生存者が 無防備 のステータスに苦しむ。 効果は脅威範囲外に出てからも(26・28・30)秒間続くほか、担いだ生存者をフックに吊るすか、解放した時に範囲内にいる生存者も同じ時間効果が続く。 スターに憧れては生存者が担がれていない状態になってから60秒間のクールダウンが発生する。",
+  icon: "Perks/Comet/iconPerks_Starstruck.png"
+},
+{
+  name: "クラウドコントロール",
+  description: "生存者が初めて窓の中速乗り越えまたは高速乗り越えを行ったとき、無力なトーテムに火が灯る。生存者が中速乗り越えまたは高速乗り越えを行った窓がブロックされる。同時にブロックされるのは、最後に乗り越えた4/5/6つの窓。ブロックされた窓を通常乗り越えする速度が15%上昇する。24メートル以内にあるブロックされた窓のオーラが視える。生存者が高速乗り越えを行うと、その乗り越え障害物がエンティティによってブロックされる。同時にブロックされるのは5箇所まで。",
+  icon: "Perks/Comet/iconPerks_HexCrowdControl.png"
+},
+{
+  name: "袋小路",
+  description: "生存者を初めてフックに吊るすたびに、袋小路の1トークンを獲得する。脱出ゲートが通電すると袋小路が発動する。 生存者が脱出ゲートのスイッチにアクションを起こすと大きな通知音が鳴る。その後、12秒間に加え、所持するトークン1つにつき(6・9・12)秒間、脱出ゲートの両方のスイッチがエンティティによってブロックされる。",
+  icon: "Perks/Comet/iconPerks_NoWayOut.png"
+},
+{
+  name: "死を呼ぶ追跡者",
+  description: "儀式開始時、生存者全員のオーラが(7・8・9)秒間視える。 生存者のオーラが一定時間表示されるたびに、その持続時間が2秒間増加する",
+  icon: "Perks/Eclipse/iconPerks_LethalPursuer.png"
+},
+{
+  name: "集団ヒステリー",
+  description: "無傷の生存者が何らかの手段で負傷すると、すべての生存者が(30・35・40)秒間 無感覚(忘却) のステータス効果に苦しむ。 集団ヒステリーは20秒間のクールタイムがある。",
+  icon: "Perks/Eclipse/iconPerks_Hysteria.png"
+},
+{
+  name: "イラプション",
+  description: "発電機を蹴ると、そのオーラが黄色で強調表示される。 生存者が瀕死状態になると強調表示されたすべての発電機が爆発し、修理進行度が10%失われ、後退し始める 爆発時に発電機を修理中だった生存者は叫び声を上げ、そのオーラが(8・10・12)秒間視える。 イラプションには30秒間のクールダウンが発生する。。",
+  icon: "Perks/Eclipse/iconPerks_Eruption.png"
+},
+{
+  name: "デッドロック",
+  description: "1台の発電機の修理が完了すると、最も修理の進んだ発電機がエンティティによって(15・20・25)秒間ブロックされる。この間、その発電機の白いオーラが視える。。",
+  icon: "Perks/Gemini/iconPerks_Deadlock.png"
+},
+{
+  name: "玩具",
+  description: "生存者を最初にフックに吊るした時、その生存者は 呪縛 状態に陥り、無力なトーテムで呪術：玩具が発動する。呪縛状態の生存者は呪術：玩具が浄化されるまで 無感覚(忘却) のステータス効果に苦しむ。 呪縛状態の生存者は呪術：玩具のトーテムから(24・20・16)メートル以内にいるとそのオーラが視える。最初の90秒間は、呪縛状態の生存者のみがトーテムの浄化を行える。。",
+  icon: "Perks/Gemini/iconPerks_HexPlaything.png"
+},
+{
+  name: "苦痛という名の賜り物",
+  description: "儀式開始時、最大4つのフックがランダムに悶絶のフックに変更される。これらのフックは白いオーラで表示される。 悶絶のフックから救出された生存者は、 出血 と 重傷 のステータス効果に90秒間苦しむ。その生存者は初回回復時、再び負傷するまで治療と修理の速度がそれぞれ (12・14・16)%減少する。",
+  icon: "Perks/Gemini/iconPerks_ScourgeHookGiftOfPain.png"
+},
+{
+  name: "不吉な包囲",
+  description: "生存者を初めてフックに吊るすたびに1トークンを獲得する。そのフックから16メートル離れた際、全ての発電機が(6・8・10)秒間ブロックされる。 4トークンに達すると、フックから16メートル離れた際、エンティティが全ての発電機を40秒間ブロックする。オブセッションのオーラが6秒間表示される。",
+  icon: "Perks/Ion/T_iconPerks_grimEmbrace.png"
+},
+{
+  name: "共鳴する苦痛",
+  description: "儀式開始時、最大4つのフックがランダムに悶絶のフックに変更される。これらのフックは白いオーラで表示される。 4個のトークンとともに儀式を始める（各生存者に1個使用可）。トークン未使用の生存者を悶絶のフックに吊るした際に残りの発電機がある場合、トークンを1個失い、修理進行度の最も高い発電機が爆発して進行度が即座に(10・15・20)%失われ、さらに後退し始める。 トークンがなくなると、共鳴する苦痛は儀式が終わるまで解除される。",
+  icon: "Perks/Ion/T_iconPerks_painResonance.png"
+},
+{
+  name: "ペンティメント",
+  description: "・あなたは浄化されたトーテムのオーラが視え、浄化されたトーテムをトーテムにつき1回、再燃できる。 ・再燃したトーテムがある間、生存者の治療と修理の速度が20%低下する。再燃したトーテムが増えるとトーテム1個あたり速度がさらに(1・2・3)%低下する。 ・5つの全トーテムが同時に再燃した状態になると、すべてのトーテムがエンティティによって永続的にブロックされる。 ・呪縛状態の生存者は、16メートル以内の再燃したトーテムのオーラが視える。",
+  icon: "Perks/Ion/T_iconPerks_hexPentimento.png"
+},
+{
+  name: "氾濫する憤怒",
+  description: "儀式開始時、4つのランダムなフックが悶絶のフックに置き換わる。悶絶のフックは白いオーラで表示される。 悶絶のフックから生存者が救助されると他の生存者全員のオーラが(5・6・7)秒間視えるようになる。",
+  icon: "Perks/Kepler/iconPerks_FloodOfRage.png"
+},
+{
+  name: "海の呼び声",
+  description: "発電機にダメージを与えると70秒間このパークが発動する。 発動した発電機は通常の(130・140・150)%の速度で修理進行度が後退し、その発電機のオーラが視えるようになる。 このパークが発動した発電機を修理する生存者がスキルチェックでグッドを達成するたびに、大きな通知音を受ける。",
+  icon: "Perks/Kepler/iconPerks_CallOfBrine.png"
+},
+{
+  name: "怒涛の嵐",
+  description: "発電機の修理進行度が90%に到達すると、その発電機を修理している生存者に連続でスキルチェックが発生する。スキルチェックに失敗するか修理を中断すると、その発電機は(16・18・20)秒間ブロックされる。 怒涛の嵐は各儀式で発電機1台につき1回のみ発動可能。",
+  icon: "Perks/Kepler/iconPerks_MercilessStorm.png"
+},
+{
+  name: "解体",
+  description: "手段にかかわらず生存者を負傷させると、その3秒後に解体が発動し、(12・16・20)秒間持続する。解体が発動中、脅威範囲内で生存者が高速乗り越えを行うと、乗り越えの直後にそのパレットがエンティティによって破壊され、解体が解除される。",
+  icon: "Perks/Meteor/iconPerks_Dissolution.png"
+},
+{
+  name: "露見する闇",
+  description: "ロッカーを調べた時、いずれかのロッカーから8メートル範囲内にいるすべての生存者のオーラが(6・7・8)秒間視えるようになる。 このパークには30秒のクールダウンが発生する。 腐敗の気配 妨害・デバフ",
+  icon: "Perks/Meteor/iconPerks_DarknessRevelated.png"
+},
+{
+  name: "腐敗の気配",
+  description: "あなたの脅威範囲で治療アクションを行った生存者は 目眩まし と 疲労 に苦しむ。 これらの効果は、何らかの手段で治療アクションが中断された後も(20・25・30)秒間持続する。",
+  icon: "Perks/Meteor/iconPerks_SepticTouch.png"
+},
+{
+  name: "打ち砕かれた希望",
+  description: "恵みのトーテムを鎮圧すると、トーテムが鎮火する代わりに破壊される。 この方法で恵みのトーテムを破壊すると、恵みのトーテムの範囲内にいる生存者全員のオーラが(6・7・8)秒間視えるようになる。",
+  icon: "Perks/Meteor/iconPerks_BoonDestroyer.png"
+},
+{
+  name: "人体の超越",
+  description: "12メートル以内で生存者が高速乗り越えを行うと、このパークが発動する。次に窓枠を乗り越えた際、乗り越え速度が(30・35・40)%上昇する。 このパークは窓枠を乗り越えると解除される。 このパークには25秒間のクールダウンが発生する。",
+  icon: "Perks/Orion/iconPerks_SuperiorAnatomy.png"
+},
+{
+  name: "知覚覚醒",
+  description: "生存者を運んでいる時、(16・18・20)メートル以内にいる他の生存者のオーラが視える。",
+  icon: "Perks/Orion/iconPerks_AwakenedAwarenesss.png"
+},
+{
+  name: "終末期",
+  description: "脱出ゲートが通電すると、このパークが発動する。終末期が発動中、負傷またはダウン状態、あるいはフックに吊られた生存者は、脱出ゲートが開放されるまで 衰弱 のステータス効果に苦しむ。衰弱状態は脱出ゲートが開いた後も(35・40・45)秒間続く。",
+  icon: "Perks/Orion/iconPerks_Terminus.png"
+},
+{
+  name: "隠れ場なし",
+  description: "発電機にダメージを与えると、(3・4・5)秒間、自分の位置から24メートル以内に立っている生存者全員のオーラが視える。",
+  icon: "Perks/Quantum/iconPerks_NowhereToHide.png"
+},
+{
+  name: "闇との対面",
+  description: "何らかの方法で生存者を負傷させると無力なトーテムが輝いて、呪いが発動する。 呪いの発動中は、自分の脅威範囲外にいる他の生存者全員が(35・30・25秒)ごとに叫び声をあげて、その位置とオーラが2秒間視える。 呪縛 状態の生存者が瀕死状態になった場合、または無傷状態を回復した場合、呪いのトーテムは輝きを失い、このパークは解除される。 呪いのトーテムが浄化されると、パークは永続的に無効化される。",
+  icon: "Perks/Quantum/iconPerks_HexFaceTheDarkness.png"
+},
+{
+  name: "ヒュブリス",
+  description: "生存者が自分を怯ませると、その生存者が(20・25・30)秒間、 無防備 ステータス効果に苦しむ。 ヒュブリスには20秒間のクールダウンがある。",
+  icon: "Perks/Quantum/iconPerks_Hubris.png"
+},
+{
+  name: "執拗な狩り",
+  description: "オブセッションを追跡中にこのパークが発動する。 発電機にダメージを与えたり、壁やパレットを破壊したりすると、7%の 迅速 ステータスを(8・9・10)秒間得る。 最も長く追跡した生存者に通常攻撃を命中させるとオブセッションとなる",
+  icon: "Perks/Saturn/iconPerks_GameAfoot.png"
+},
+{
+  name: "バシッ！",
+  description: "「バシッ！」は3個のトークンを所持して儀式を始める。 破壊可能な壁またはパレットを破壊した際、トークンを1個消費する。 36メートル以内の生存者が叫び声を上げ、その位置が(4・5・6)秒間表示される。 1人の生存者をフックに吊るすと、再びトークンを1個得る。",
+  icon: "Perks/Saturn/iconPerks_Thwack.png"
+},
+{
+  name: "骨抜きの作用",
+  description: "生存者がフックを外すアクションを行うと、その生存者の治療速度が60秒間、(20・25・30)%低下する。 遺伝的限界 妨害・デバフ",
+  icon: "Perks/Saturn/iconPerks_Leverage.png"
+},
+{
+  name: "遺伝的限界",
+  description: "生存者が1段階負傷すると、 疲労 ステータス効果に8秒間苦しむ。",
+  icon: "Perks/Umbra/IconPerks_GeneticLimits.png"
+},
+{
+  name: "躊躇の強制",
+  description: "何らかの手段で生存者が瀕死状態になると、その生存者の16メートル以内に立っている他の生存者全員が10秒間の妨害ステータスに苦しみ、移動速度が20％低下する。このパークには(40・35・30)秒のクールダウンがある。",
+  icon: "Perks/Umbra/IconPerks_ForcedHesitation.png"
+},
+{
+  name: "機械学習",
+  description: "発電機にダメージを与えると、その発電機が侵害状態になる。侵害状態になる発電機は一度に一台のみ。 侵害状態にある発電機の修理が完了すると、あなたは 探知不可 になり、8％の 迅速 効果を(40・50・60)秒間得る。",
+  icon: "Perks/Umbra/IconPerks_SelfAware.png"
+},
+{
+  name: "究極の武器",
+  description: "ロッカーを開けると、ロッカーの40メートル以内にいる全ての生存者が叫び声を上げてその位置を知らせ、30秒間目眩まし状態になる。このパークには(55・50・45)秒間のクールダウンがある。",
+  icon: "Perks/Wormhole/iconPerks_UltimateWeapon.png"
+},
+{
+  name: "素早い残虐行為",
+  description: "血の渇望を得なくなる。通常攻撃を生存者に命中させると、5%の迅速を(8・9・10)秒間得る。",
+  icon: "Perks/Wormhole/iconPerks_RapidBrutality.png"
+},
+{
+  name: "エイリアンの本能",
+  description: "生存者をフックに吊るすと、このパークが発動する。最も遠い場所にいる負傷した生存者のオーラが8秒間視え、その生存者が(40・50・60)秒間 無感覚(忘却) となる。",
+  icon: "Perks/Wormhole/iconPerks_AlienInstinct.png"
+},
+{
+  name: "二人遊び",
+  description: "生存者が殺人鬼を(4・3・2)回怯ませるか目眩ましすると、呪術：二人遊びに紐づけされた呪いのトーテムがまだない場合、無力なトーテムが呪いのトーテムとなる。 殺人鬼を怯ませるか目眩ましした生存者が、1.5秒間目眩まし状態となる。これは運ばれている生存者には影響しない。 呪いの効果は、紐付けられた呪いのトーテムが残っているかぎり持続する。",
+  icon: "Perks/Yerkes/iconPerks_twoCanPlay.png"
+},
+{
+  name: "死ぬまで親友",
+  description: "オブセッションでない生存者をフックに吊るすと、オブセッションが20秒間無防備となり、そのオーラが(6・8・10)秒間視える。オブセッションをフックに吊るすと、別のランダムな生存者が叫び声を上げて位置を知らせ、オブセッションになる。",
+  icon: "Perks/Yerkes/iconPerks_friendsTillTheEnd.png"
+},
+{
+  name: "電池付き",
+  description: "修理の完了した発電機の16メートル以内にいる間、5%の 迅速 を得る。移動速度のボーナスは、発電機の範囲を出たあと(1・3・5)秒間継続する。",
+  icon: "Perks/Yerkes/iconPerks_batteriesIncluded.png"
+},
+{
+  name: "アンバウンド",
+  description: "なんらかの手段で生存者が負傷すると、このパークが(24・27・30)秒間発動する。 窓を乗り越えると7%の迅速を10秒間得る。効果は重複しない。",
+  icon: "Perks/Applepie/iconPerks_Unbound.png"
+},
+{
+  name: "アンフォーシーン",
+  description: "発電機を破壊すると、脅威範囲がその発電機に(22・26・30)秒間移動して、範囲が32メートルとなる。 効果が続く限り、 探知不可 のステータス効果を得る。 その後、パークは30秒間のクールダウンに入る。",
+  icon: "Perks/Applepie/iconPerks_Unforeseen.png"
+},
+{
+  name: "アンダン",
+  description: "治療中や修理中に生存者がスキルチェックに失敗すると、トークンを3つ獲得する。最大(18・24・30)個まで。 発電機を破壊する際にトークンを所持している場合、トークンが全て使用される。トークン1つごとに発電機の全体の進行度が1%失われ、その後、発電機が1秒間ブロックされる。 発電機のブロックが解除されると、修理の進行度が後退し始める。 このパークには60秒間のクールダウンがある。 同調 オーラ 索敵",
+  icon: "Perks/Applepie/iconPerks_Undone.png"
+},
+{
+  name: "同調",
+  description: "アイテムが初めて使い果たされると、地面に落とされる。落とされたアイテムのオーラが視える。落とされたアイテムの12メートル以内にいる生存者のオーラが視える。影響を受けた生存者にはアイテムのオーラが視える。生存者が生存者のアイテムを拾うと、 無感覚 のステータス効果に(20・25・30)秒間苦しむ。 倦怠感",
+  icon: "Perks/Churros/iconPerks_WeaveAttunement.png"
+},
+{
+  name: "倦怠感",
+  description: "自分の36メートル以内にいる生存者がカラスを怖がらすと、 疲労 のステータス効果を(6・8・10)秒間得る。倦怠感には5秒間のクールダウンがある。",
+  icon: "Perks/Churros/iconPerks_LanguidTouch.png"
+},
+{
+  name: "闇の慢心",
+  description: "何らかの方法で自分が受けた 目眩まし の持続時間とパレットによる怯みの持続時間が15%増加する。通常の乗り越え速度が(15・20・25)%増加する。",
+  icon: "Perks/Churros/iconPerks_DarkArrogance.png"
+},
+{
+  name: "悲惨な運命",
+  description: "1台の発電機の修理が完了すると、ランダムな無力なトーテムが呪いのトーテムとなり、オブセッションを呪う。 オブセッションは(27・30・33%)の修理速度ペナルティに苦しむ。オブセッションはその呪いのトーテムの(12・12・12)メートル以内に来ると、そのオーラが視える。 この効果は呪いのトーテムが浄化されるまで持続する。",
+  icon: "Perks/Eclair/iconPerks_HexWretchedFate.png"
+},
+{
+  name: "人間の欲",
+  description: "未開封のチェストのオーラが視え、生存者が未開封のチェストの8メートル以内に入ると、その生存者のオーラが(3・4・5)秒間表示される。 チェストを蹴ってチェストを閉じる能力も得る。この能力には10秒間のクールダウンがある。閉じたチェストは生存者によって50%速く開錠される。",
+  icon: "Perks/Eclair/iconPerks_HumanGreed.png"
+},
+{
+  name: "支配",
+  description: "それぞれのトーテムとチェストに対して生存者が初めてアクションを行ったとき、そのトーテムまたはチェストがエンティティによって(8・12・16)秒間ブロックされる。 ブロックされたトーテムまたはチェストのオーラがあなたに白く表示される。",
+  icon: "Perks/Eclair/iconPerks_Dominance.png"
+},
+{
+  name: "天地を揺るがす雷",
+  description: "あなたの力の前に陸海の敵が震え上がる。高い場所から落ちたあと、(15・20・25)秒間、突進攻撃距離が75%増加する。このパークには5秒間のクールダウンがある。",
+  icon: "Perks/Gelato/T_UI_iconPerks_AllShakingThunder.png"
+},
+{
+  name: "不規則なコンパス",
+  description: "儀式開始時、4個のランダムなフックが悶絶のフックに置き換わる。悶絶のフックは白いオーラで表示される。生存者がフックから外されると、そのフックが悶絶のフックになる。悶絶のフックに生存者を吊るすと、最も修理の進んだ発電機が黄色のオーラで(6・8・10)秒間表示される。",
+  icon: "Perks/Gelato/T_UI_iconPerks_ScourgeHookJaggedCompass.png"
+},
+{
+  name: "容赦なし",
+  description: "生存者が自己治療の75%に達すると、連続でスキルチェックが発生する。そのスキルチェックに失敗した場合やその治療を中断した場合、生存者は(20・25・30)秒間 衰弱 のステータス効果に苦しむ。衰弱になると生存者は回復できなくなる。",
+  icon: "Perks/Gelato/T_UI_iconPerks_NoQuarter.png"
+},
+{
+  name: "生き地獄",
+  description: "通常攻撃で生存者に8回ダメージを与えると、無力なトーテムが呪いのトーテムとなり、全ての生存者を呪う。 通常攻撃で生存者にダメージを与えると、その生存者が5%の妨害を(10・12.5・15)秒間受ける。 この効果は、呪いのトーテムが浄化されるまで続く。",
+  icon: "Perks/kaneki/T_UI_iconPerks_NothingButMisery.png"
+},
+{
+  name: "切れない縁",
+  description: "生存者がダメージを受けると、トークンが1個貯まる。最大(6・7・8)まで。 生存者を担ぎ上げたり、降ろしたり、フックに吊るしたりする速度がトークン1個につき4%上昇する。",
+  icon: "Perks/kaneki/T_UI_iconPerks_ForeverEntwined.png"
+},
+{
+  name: "誰も自由ではない",
+  description: "生存者を初めてフックに吊るした時、トークンが1個貯まる(最大4個まで)。 全ての発電機の修理が完了すると、トークン1個につき(12・14・16)秒間、全ての窓と立っているパレットがブロックされる。",
+  icon: "Perks/kaneki/T_UI_iconPerks_NoneAreFree.png"
+},
+{
+  name: "従業員募集中",
+  description: "・発電機にダメージを与えると、その発電機が侵害状態になる。 侵害状態にある発電機の修理が完了すると、通常攻撃成功後のクールダウンが (40・50・60)秒間、25%減少する。 ・発電機にダメージを与えると、その発電機が侵害状態になる。 侵害状態にある発電機の修理が完了すると、通常攻撃成功後のクールダウンが25秒間、60%減少する。",
+  icon: "Perks/Anima/T_UI_iconPerks_HelpWanted.png"
+},
+{
+  name: "幻影の震撼",
+  description: "脅威範囲内にいる生存者が自分を見ると、その生存者が叫び声を上げてそのオーラが2秒間視える。 このパークには(80・70・60)秒間のクールダウンがある。",
+  icon: "Perks/Anima/T_UI_iconPerks_PhantomFear.png"
+},
+{
+  name: "誤作動",
+  description: "脱出ゲートのスイッチが80%以上進行した状態では、生存者が手を放すと、ゲート解放速度の(80・90・100)%の速度で後退する。 スイッチの進行が後退している間、脱出ゲートの照明がランダムに点滅するのが生存者に視える。",
+  icon: "Perks/Anima/T_UI_iconPerks_Haywire.png"
+},
+{
+  name: "貪欲",
+  description: "それぞれの生存者を初めてフックに吊るしたとき、トークンが1個貯まる（最大4個まで）。 トークンが4個貯まると、すべての生存者が叫び声を上げ、（40・50・60）秒間、 無防備 状態になる。",
+  icon: "Perks/Gasu/T_UI_iconPerks_Ravenous.png"
+},
+{
+  name: "泳ぐ目",
+  description: "生存者の追跡を始めると、20メートル以内にいる他の負傷した生存者全員のオーラが5秒間表示される。 このパークには（40・35・30）秒間のクールダウンがある。",
+  icon: "Perks/Gasu/T_UI_iconPerks_WanderingEye.png"
+},
+{
+  name: "破滅の序曲",
+  description: "呪いのトーテムが1つ生成され、最も遠くにある発電機を呪い、あなたにそのオーラを黄色で表示する。 生存者が呪われた発電機を5秒間修理すると、（20・25・30）秒間、自分が 探知不可 を得て自分の脅威範囲がその発電機に移る。 呪われた発電機の修理が完了すると、次に最も遠くにある発電機が呪われる。",
+  icon: "Perks/Gasu/T_UI_iconPerks_HexOvertureOfDoom.png"
+},
+{
+  name: "時間の逆行",
+  description: "生存者をフックに吊るしたあと（40・50・60）秒以内に20メートル以内の発電機を選んでアビリティ発動のボタン1を押すと、その発電機が爆発して進行度が即座に10%失われ、さらに後退し始める。",
+  icon: "Perks/First/T_UI_iconsPerks_TurnBackTheClock.png"
+},
+{
+  name: "極秘プロジェクト",
+  description: "トーテムが清められるか浄化されると、ブロックされていない発電機の中からランダムな発電機1台が（20・25・30）秒間ブロックされる。 1台以上の発電機がブロックされると、30秒間、探知不可を得る。",
+  icon: "Perks/First/T_UI_iconsPerks_SecretProject.png"
+},
+{
+  name: "ハイブマインド",
+  description: "生存者を最初にフックに吊るしたとき、無力なトーテムが呪いのトーテムとなる。 発電機のオーラの強さで、修理進行度が判別できる。 修理を完了すべき発電機が残り1台になると、残りの発電機が全て爆発して進行度が即座に（6・8・10）%失われて後退し始め、呪いのトーテムは輝きを失う。",
+  icon: "Perks/First/T_UI_iconsPerks_HexHiveMind.png"
+},
+
+
+/*ここから一般*/
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Perks/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Perks/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Perks/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Perks/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パーク自由",
+    description: "大当たり！好きなパークを１つ選択。",
+    icon: "Perks/iconStatusEffects_exhausted.png"
+  },
+
+    ];
+
+const REEL_COUNT = 4;
+const FRAME_IDS = ["frame1", "frame2", "frame3", "frame4"];
+const REEL_HEIGHT = 200;
+const REEL_VISIBLE_REPEAT = 20;
+const KILLER_REEL_HEIGHT = 138;
+const KILLER_REEL_VISIBLE_REPEAT = 20;
+const URA_TRIGGER_RATE = 0.45; // 25%
+const URA_HIT_RATE = 0.30;
+let nextFreeRate = null;
+let isUraProcessing = false;
+let uraSessionId = 0;
+let uraResolved = false;
+let uraTargetIndexes = [];
+let uraSpinPendingCount = 0;
+let reelAnimFrames = [null, null, null, null];
+let reelPositions = [0, 0, 0, 0];
+let killerAnimFrame = null;
+let killerReelPosition = 0;
+
+
+const REVIVAL_PERKS = [
+  "イラプション",
+  "隠れ場なし",
+  "共鳴する苦痛",
+  "死人のスイッチ"
+];
+
+let reelIntervals = [null, null, null, null];
+let reelLocked = [false, false, false, false];
+let reelCurrentIndexes = [0, 0, 0, 0];
+let finalParks = [];
+
+let killerShuffleInterval = null;
+let killerLocked = false;
+let finalKiller = null;
+
+let isShuffling = false;
+let autoStopEnabled = false;
+let autoStopTimers = [];
+let autoStopSessionId = 0;
+let isStopping = false;
+let isFinalChecking = false;
+let reelSourceOrders = [[], [], [], []];
+let killerSourceOrder = [];
+let killerCurrentIndex = 0;
+
+function playUraAtari() {
+  if (!seEnabled || !uraAtariSound) return;
+  uraAtariSound.pause();
+  uraAtariSound.currentTime = 0;
+  uraAtariSound.volume = SE_BASE_VOLUME.uraAtari * seVolume;
+  uraAtariSound.play().catch(() => {});
+}
+
+function playUraHazure() {
+  if (!seEnabled || !uraHazureSound) return;
+  uraHazureSound.pause();
+  uraHazureSound.currentTime = 0;
+  uraHazureSound.volume = SE_BASE_VOLUME.uraHazure * seVolume;
+  uraHazureSound.play().catch(() => {});
+}
+
+function playGekiatuSound() {
+  if (!seEnabled || !gekiatuSound) return;
+  gekiatuSound.pause();
+  gekiatuSound.currentTime = 0;
+  gekiatuSound.volume = SE_BASE_VOLUME.gekiatu * seVolume;
+  gekiatuSound.play().catch(() => {});
+}
+
+function playKakuteiSe() {
+  if (!seEnabled || !kakuteiSound) return;
+  kakuteiSound.pause();
+  kakuteiSound.currentTime = 0;
+  kakuteiSound.volume = SE_BASE_VOLUME.kakutei * seVolume;
+  kakuteiSound.play().catch(() => {});
+}
+
+function stopKakuteiSe() {
+  if (!kakuteiSound) return;
+  kakuteiSound.pause();
+  kakuteiSound.currentTime = 0;
+}
+
+
+function getNoPerkIndexes() {
+  return finalParks
+    .map((park, index) => ({ park, index }))
+    .filter(item => item.park && item.park.name === "パークなし")
+    .map(item => item.index);
+}
+
+function getRevivalCandidates(currentNames = [], excludeNames = []) {
+  return REVIVAL_PERKS.filter(name => {
+    return !currentNames.includes(name) && !excludeNames.includes(name);
+  });
+}
+
+function pickRevivalPlan(noPerkIndexes) {
+  const usedNames = finalParks.map(p => p?.name).filter(Boolean);
+  const plan = [];
+
+  for (const reelIndex of noPerkIndexes) {
+    const exclude = plan.map(x => x.perkName);
+    const candidates = getRevivalCandidates(usedNames.concat(exclude), exclude);
+
+    if (candidates.length === 0) continue;
+
+    const perkName = candidates[Math.floor(Math.random() * candidates.length)];
+    plan.push({ reelIndex, perkName });
+  }
+
+  return plan;
+}
+
+async function frameEvent1() {
+  const frames = FRAME_IDS.map(id => document.getElementById(id)).filter(Boolean);
+
+  // いったん全部消す
+  frames.forEach(f => {
+    f.classList.remove("flash", "flash-hold", "frame-run", "frame-lit", "frame-hit");
+  });
+
+  // 左から順番に白発光
+  for (let i = 0; i < frames.length; i++) {
+    frames.forEach(f => f.classList.remove("frame-lit", "frame-hit"));
+    frames[i].classList.add("frame-lit");
+    await sleep(200);
+  }
+
+  await sleep(250);
+
+  const hit = Math.random() < 0.10;
+
+  if (hit) {
+    // 全部赤
+    frames.forEach(f => {
+      f.classList.remove("frame-lit", "flash", "flash-hold");
+      f.classList.add("frame-hit");
+    });
+
+    playGekiatuSound();
+    nextFreeRate = 1 / 3;
+
+    await sleep(1200);
+  } else {
+    frames.forEach(f => {
+      f.classList.remove("frame-lit", "frame-hit", "flash", "flash-hold");
+    });
+
+    playUraHazure();
+
+    await sleep(250);
+  }
+}
+
+async function frameEvent2() {
+  const f = FRAME_IDS.map(id => document.getElementById(id)).filter(Boolean);
+
+  f.forEach(x => x.classList.remove("flash", "flash-hold", "frame-run", "frame-lit", "frame-hit"));
+
+  for (let i = 0; i < 3; i++) {
+    f.forEach(x => x.classList.remove("frame-lit", "frame-hit"));
+
+    f[0]?.classList.add("frame-lit");
+    f[2]?.classList.add("frame-lit");
+    await sleep(160);
+
+    f[0]?.classList.remove("frame-lit");
+    f[2]?.classList.remove("frame-lit");
+
+    f[1]?.classList.add("frame-lit");
+    f[3]?.classList.add("frame-lit");
+    await sleep(160);
+
+    f[1]?.classList.remove("frame-lit");
+    f[3]?.classList.remove("frame-lit");
+  }
+
+  const hit = Math.random() < 0.05;
+
+  if (hit) {
+    f.forEach(x => {
+      x.classList.remove("frame-lit", "flash", "flash-hold");
+      x.classList.add("frame-hit");
+    });
+
+    playGekiatuSound();
+    nextFreeRate = 1 / 20;
+
+    await sleep(1200);
+  } else {
+    f.forEach(x => x.classList.remove("frame-lit", "frame-hit", "flash", "flash-hold"));
+
+    playUraHazure();
+
+    await sleep(250);
+  }
+}
+
+function sleep(ms){
+  return new Promise(resolve=>setTimeout(resolve,ms));
+}
+
+async function flashAllReels(times, holdAfter = false) {
+  const sessionId = uraSessionId;
+
+  const flashOnMs = 300;      // 光っている時間
+  const flashGapMs = 250;     // 次のフラッシュまで
+  const endWaitMs = 500;      // 当たり時の待ち
+  const hazureDelayMs = 80;  // ハズレ後の待ち
+
+  for (let n = 0; n < times; n++) {
+    if (sessionId !== uraSessionId) return false;
+
+    for (let i = 0; i < REEL_COUNT; i++) {
+      const frame = document.getElementById(`frame${i + 1}`);
+      frame?.classList.remove("frame-lit", "frame-hit");
+      frame?.classList.add("flash");
+    }
+
+    await sleep(flashOnMs);
+
+    if (sessionId !== uraSessionId) return false;
+
+    for (let i = 0; i < REEL_COUNT; i++) {
+      const frame = document.getElementById(`frame${i + 1}`);
+      frame?.classList.remove("flash");
+    }
+
+    if (n < times - 1) {
+      await sleep(flashGapMs);
+    }
+  }
+
+  if (holdAfter) {
+    for (let i = 0; i < REEL_COUNT; i++) {
+      const frame = document.getElementById(`frame${i + 1}`);
+      frame?.classList.add("flash-hold");
+    }
+    await sleep(endWaitMs);
+  } else {
+    await sleep(hazureDelayMs);
+  }
+
+  return true;
+}
+
+async function checkFrameEvent() {
+  if (isUraProcessing) {
+    finalizeResult();
+    return;
+  }
+
+  if (!(reelLocked.every(v => v) && killerLocked)) return;
+
+  const hasNoPerk = finalParks.some(p => p && p.name === "パークなし");
+  if (hasNoPerk) {
+    finalizeResult();
+    return;
+  }
+
+  if (currentSpecialHit) {
+    finalizeResult();
+
+    playKakuteiSe();
+    return;
+  }
+
+  const shouldPlayFrameEvent = Math.random() <= 0.3;
+
+  if (!shouldPlayFrameEvent) {
+  await runDoorChanceIfNeeded();
+  return;
+}
+
+  if (Math.random() < 0.6) {
+    await frameEvent1();
+  } else {
+    await frameEvent2();
+  }
+
+  finalizeResult();
+}
+
+function spinRevivalReel(index, perkName, sessionId) {
+  return new Promise(resolve => {
+    const frame = document.getElementById(`frame${index + 1}`);
+    const track = document.getElementById(`reel${index + 1}`);
+    if (!frame || !track) {
+      resolve(false);
+      return;
+    }
+
+    const targetPark = allParks.find(p => p.name === perkName);
+    if (!targetPark) {
+      console.error("復活候補が見つかりません", perkName);
+      resolve(false);
+      return;
+    }
+
+    const targetIndex = allParks.findIndex(
+      p => p.name === targetPark.name && p.icon === targetPark.icon
+    );
+
+    if (targetIndex < 0) {
+      console.error("復活候補の停止位置が見つかりません", targetPark);
+      resolve(false);
+      return;
+    }
+
+    if (reelIntervals[index]) {
+      clearInterval(reelIntervals[index]);
+      reelIntervals[index] = null;
+    }
+
+    frame.classList.remove("special-hit", "rainbow-hit", "ready-stop", "flash", "flash-hold");
+    frame.classList.add("stopping");
+
+    buildReel(`reel${index + 1}`, (index * 7) % allParks.length);
+
+    const baseLoopHeight = allParks.length * REEL_HEIGHT;
+    let y = -baseLoopHeight;
+    let speed = 2600;
+    let lastTime = 0;
+    const spinStart = performance.now();
+    const fakeSpinDuration = 1200;
+
+    function applyY(val) {
+      track.style.transform = `translateY(${val}px)`;
+    }
+
+    function spinLoop(now) {
+      if (!isUraProcessing || sessionId !== uraSessionId) {
+        frame.classList.remove("stopping");
+        resolve(false);
+        return;
+      }
+
+      if (!lastTime) lastTime = now;
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+
+      y += speed * dt;
+      if (y >= 0) y = -baseLoopHeight;
+      applyY(y);
+
+      if (now - spinStart < fakeSpinDuration) {
+        requestAnimationFrame(spinLoop);
+        return;
+      }
+
+      const targetY = -(targetIndex * REEL_HEIGHT);
+      const stopFromY = y;
+      const stopStartMs = performance.now();
+      const stopEndMs = stopStartMs + 650;
+
+      function settleLoop(ts) {
+        if (!isUraProcessing || sessionId !== uraSessionId) {
+          frame.classList.remove("stopping");
+          resolve(false);
+          return;
+        }
+
+        const total = stopEndMs - stopStartMs;
+        const elapsed = Math.min(ts - stopStartMs, total);
+        const t = Math.max(0, Math.min(elapsed / total, 1));
+        const eased = 1 - Math.pow(1 - t, 2.2);
+
+        const currentY = stopFromY + (targetY - stopFromY) * eased;
+        applyY(currentY);
+
+        if (t < 1) {
+          requestAnimationFrame(settleLoop);
+          return;
+        }
+
+       finalParks[index] = targetPark;
+reelLocked[index] = true;
+
+forceReelDisplay(index, targetPark, true);
+
+frame.classList.remove("stopping");
+resolve(true);
+      }
+
+      requestAnimationFrame(settleLoop);
+    }
+
+    requestAnimationFrame(spinLoop);
+  });
+}
+
+function getRandomParks() {
+  const normalParks = allParks.filter(p => {
+    const name = String(p?.name || "").trim();
+    return name !== "パークなし" && name !== "パーク自由" && name !== "自由確定";
+  });
+
+  const pool = [...normalParks];
+
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  return pool.slice(0, 4);
+}
+
+//ドア演出
+const DOOR_EVENT_TRIGGER_RATE = 0.40; //0.40
+const DOOR_EVENT_HIT_RATE = 0.20; //0.08
+
+let isDoorChanceProcessing = false;
+let holdDoorVisualUntilNextStart = false; // 次のスタート押下まで動画とドア演出を保持
+
+
+function createKillerReelItemsHtml(killers) {
+  return killers.map(killer => `
+    <div class="reel-item">
+      <img src="${killer.icon}" alt="${killer.name}">
+      <div class="reel-item-name">${killer.name}</div>
+    </div>
+  `).join("");
+}
+
+function buildKillerReel() {
+  const reel = document.getElementById("killerReel");
+  if (!reel) return;
+
+  reel.innerHTML = "";
+
+  const killers = getAvailableKillers();
+
+  if (!killers.length) {
+    reel.innerHTML = `
+      <div class="reel-item reel-item-empty">
+        <div class="reel-item-name">未設定</div>
+      </div>
+    `;
+    killerReelPosition = 0;
+    reel.style.transform = "translateY(0px)";
+    return;
+  }
+
+  let html = "";
+  for (let i = 0; i < KILLER_REEL_VISIBLE_REPEAT; i++) {
+    html += createKillerReelItemsHtml(killers);
+  }
+
+  reel.innerHTML = html;
+
+  const baseLoopHeight = killers.length * KILLER_REEL_HEIGHT;
+  killerReelPosition = -baseLoopHeight;
+  reel.style.transform = `translateY(${killerReelPosition}px)`;
+}
+
+function getKillerList() {
+  return getAvailableKillers();
+}
+
+function applyKillerTransform() {
+  const reel = document.getElementById("killerReel");
+  if (!reel) return;
+  reel.style.transform = `translateY(${killerState.y}px)`;
+}
+
+function wrapKillerY() {
+  const killers = getKillerList();
+  if (!killers.length) return;
+
+  const listHeight = killers.length * KILLER_ITEM_HEIGHT;
+  const minY = -(listHeight * (KILLER_COPY_COUNT - 1));
+  const maxY = -listHeight;
+
+  while (killerState.y >= maxY) {
+    killerState.y -= listHeight;
+  }
+  while (killerState.y < minY) {
+    killerState.y += listHeight;
+  }
+}
+
+function normalizeKillerTop(y) {
+  const killers = getKillerList();
+  const listHeight = killers.length * KILLER_ITEM_HEIGHT;
+  return ((-y % listHeight) + listHeight) % listHeight;
+}
+
+function getMostVisibleKillerIndexFromY(y) {
+  const killers = getKillerList();
+  if (!killers.length) return 0;
+
+  const normalizedTop = normalizeKillerTop(y);
+  let bestIndex = 0;
+  let bestVisible = -1;
+
+  for (let i = 0; i < killers.length; i++) {
+    const itemTop = i * KILLER_ITEM_HEIGHT;
+    const itemBottom = itemTop + KILLER_ITEM_HEIGHT;
+
+    const viewTop = normalizedTop;
+    const viewBottom = normalizedTop + KILLER_VIEW_HEIGHT;
+
+    let visible = 0;
+
+    if (viewBottom <= killers.length * KILLER_ITEM_HEIGHT) {
+      const overlapTop = Math.max(viewTop, itemTop);
+      const overlapBottom = Math.min(viewBottom, itemBottom);
+      visible = Math.max(0, overlapBottom - overlapTop);
+    } else {
+      const listHeight = killers.length * KILLER_ITEM_HEIGHT;
+
+      const overlap1Top = Math.max(viewTop, itemTop);
+      const overlap1Bottom = Math.min(listHeight, itemBottom);
+      const part1 = Math.max(0, overlap1Bottom - overlap1Top);
+
+      const overlap2Top = Math.max(0, itemTop);
+      const overlap2Bottom = Math.min(viewBottom - listHeight, itemBottom);
+      const part2 = Math.max(0, overlap2Bottom - overlap2Top);
+
+      visible = part1 + part2;
+    }
+
+    if (visible > bestVisible) {
+      bestVisible = visible;
+      bestIndex = i;
+    }
+  }
+
+  return bestIndex;
+}
+
+function getKillerSnapTargetY(currentY, killerIndex) {
+  const killers = getKillerList();
+  const listHeight = killers.length * KILLER_ITEM_HEIGHT;
+  const normalizedTop = normalizeKillerTop(currentY);
+  const targetTop = killerIndex * KILLER_ITEM_HEIGHT - KILLER_CENTER_OFFSET;
+
+  let deltaTop = targetTop - normalizedTop;
+
+  while (deltaTop <= -listHeight / 2) deltaTop += listHeight;
+  while (deltaTop > listHeight / 2) deltaTop -= listHeight;
+
+  return currentY - deltaTop;
+}
+
+function updateKillerReelVisual(killer, locked = false) {
+  const frame = document.getElementById("killerFrame");
+  const track = document.getElementById("killerReel");
+  if (!frame || !track) return;
+
+  frame.classList.remove("stopping", "ready-stop", "special-hit");
+  frame.classList.add("final-view");
+
+  if (!killer) {
+    track.innerHTML = `
+      <div class="reel-item reel-item-empty">
+        <div class="reel-item-name">未設定</div>
+      </div>
+    `;
+    track.style.transform = "translateY(0px)";
+
+    if (locked) {
+      frame.classList.add("ready-stop");
+    }
+    return;
+  }
+
+  track.innerHTML = `
+    <div class="reel-item">
+      <img src="${killer.icon}" alt="${killer.name}">
+      <div class="reel-item-name">${killer.name}</div>
+    </div>
+  `;
+  track.style.transform = "translateY(0px)";
+
+  if (locked) {
+    frame.classList.add("ready-stop");
+  }
+}
+
+const FREE_PARK = {
+  name: "自由確定",
+  description: "好きなパークを自由に選べる当たり枠",
+  icon: "Perks/iconStatusEffects_luck.png"
+};
+
+const SPECIAL_PERK_NAMES = ["パークなし", "パーク自由", "自由確定"];
+
+const SPECIAL_HIT_RATE = 0.15;
+
+// 合計100%
+const FREE_REEL_DISTRIBUTION = [
+  { count: 4, rate: 0.02 },
+  { count: 3, rate: 0.13 },
+  { count: 2, rate: 0.28 },
+  { count: 1, rate: 0.57 }
+];
+
+let currentSpecialHit = false;
+let currentFreeReelIndexes = [];
+
+function isSpecialPerk(park) {
+  if (!park) return false;
+  const name = String(park.name || "").trim();
+  return SPECIAL_PERK_NAMES.includes(name);
+}
+
+function isRainbowPerk(park) {
+  if (!park) return false;
+  return String(park.name || "").trim() === "自由確定";
+}
+
+function playAtariSe() {
+  if (!seEnabled || !atariSound) return;
+  atariSound.pause();
+  atariSound.currentTime = 0;
+  atariSound.volume = SE_BASE_VOLUME.atari * seVolume;
+  atariSound.play().catch(() => {});
+}
+
+function playStartSe() {
+  if (!seEnabled || !startSound) return;
+  startSound.pause();
+  startSound.currentTime = 0;
+  startSound.volume = SE_BASE_VOLUME.start * seVolume;
+  startSound.play().catch(() => {});
+}
+
+function playStopSe() {
+  if (!seEnabled || !stopSound) return;
+  stopSound.pause();
+  stopSound.currentTime = 0;
+  stopSound.volume = SE_BASE_VOLUME.stop * seVolume;
+  stopSound.play().catch(() => {});
+}
+
+function setStartLeverGlow(enabled, rainbow = false) {
+  const lever = document.querySelector(".slot-start-lever");
+  if (!lever) return;
+
+  lever.classList.remove("atari-glow", "atari-rainbow");
+
+  if (!enabled) return;
+
+  if (rainbow) {
+    lever.classList.add("atari-rainbow");
+  } else {
+    lever.classList.add("atari-glow");
+  }
+}
+
+function isFreeReel(index) {
+  return currentSpecialHit && currentFreeReelIndexes.includes(index);
+}
+
+function pickSpecialHit() {
+  if (nextFreeRate != null) {
+    const hit = Math.random() < nextFreeRate;
+    nextFreeRate = null;
+    return hit;
+  }
+  return Math.random() < SPECIAL_HIT_RATE;
+}
+
+function pickFreeReelCount() {
+  const r = Math.random();
+  let acc = 0;
+
+  for (const item of FREE_REEL_DISTRIBUTION) {
+    acc += item.rate;
+    if (r < acc) return item.count;
+  }
+
+  return 1;
+}
+
+function shuffleArray(arr) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function pickFreeReelIndexes() {
+  const freeCount = pickFreeReelCount();
+  const indexes = shuffleArray([0, 1, 2, 3]).slice(0, freeCount);
+  return indexes.sort((a, b) => a - b);
+}
+
+function triggerSpecialFlash(rainbow = false) {
+  const flash = document.getElementById("screenFlash");
+  if (!flash) return;
+
+  flash.classList.remove("rainbow");
+
+  if (rainbow) {
+    flash.classList.add("rainbow");
+  }
+
+  flash.classList.add("show");
+  setTimeout(() => flash.classList.remove("show"), 180);
+  setTimeout(() => flash.classList.add("show"), 260);
+  setTimeout(() => {
+    flash.classList.remove("show");
+    flash.classList.remove("rainbow");
+  }, 420);
+}
+
+    // ★ここが「結果欄に 〇〇、〇〇、〇〇、〇〇 を出す」対応版
+
+function createReelItemsHtml(parks) {
+  return parks.map(park => `
+    <div class="reel-item">
+      <img src="${park.icon}" alt="${park.name}">
+      <div class="reel-item-name">${park.name}</div>
+    </div>
+  `).join("");
+}
+
+function buildReel(trackId, offset = 0) {
+  const reel = document.getElementById(trackId);
+  if (!reel) return;
+
+  const reelIndex = Number(trackId.replace("reel", "")) - 1;
+
+  const base = [...allParks];
+  const rotated = [...base.slice(offset), ...base.slice(0, offset)];
+  reelSourceOrders[reelIndex] = rotated;
+
+  let html = "";
+  for (let i = 0; i < REEL_VISIBLE_REPEAT; i++) {
+    html += createReelItemsHtml(rotated);
+  }
+
+  reel.innerHTML = html;
+
+  const baseLoopHeight = allParks.length * REEL_HEIGHT;
+
+if (typeof reelPositions[reelIndex] !== "number") {
+  reelPositions[reelIndex] = -baseLoopHeight;
+}
+
+reel.style.transform = `translateY(${reelPositions[reelIndex]}px)`;
+}
+
+function initReels() {
+  for (let i = 0; i < REEL_COUNT; i++) {
+    const baseLoopHeight = allParks.length * REEL_HEIGHT;
+    reelPositions[i] = -baseLoopHeight;
+    buildReel(`reel${i + 1}`, i * 7);
+  }
+}
+
+function setStopButtonsEnabled(enabled) {
+  for (let i = 0; i < REEL_COUNT; i++) {
+    const btn = document.getElementById(`stopBtn${i + 1}`);
+    if (btn) btn.disabled = !enabled || reelLocked[i];
+  }
+}
+
+function updateStopButtonGlow() {
+  for (let i = 0; i < REEL_COUNT; i++) {
+    const btn = document.getElementById(`stopBtn${i + 1}`);
+    const socket = btn?.closest(".stop-socket");
+    if (!socket) continue;
+
+    const shouldGlow =
+      isShuffling &&
+      !reelLocked[i] &&
+      !isFreeReel(i) &&
+      btn &&
+      !btn.disabled;
+
+    socket.classList.toggle("active-glow", shouldGlow);
+  }
+}
+
+function clearAllStopButtonGlow() {
+  document.querySelectorAll(".stop-socket").forEach(socket => {
+    socket.classList.remove("active-glow");
+  });
+}
+
+function updateReelVisual(index, park, locked = false) {
+  const frame = document.getElementById(`frame${index + 1}`);
+  if (!frame || !park) return;
+
+  frame.classList.remove("stopping", "ready-stop", "special-hit", "rainbow-hit");
+
+  if (locked) {
+    frame.classList.add("ready-stop");
+
+    if (isRainbowPerk(park)) {
+      frame.classList.add("rainbow-hit");
+    } else if (isSpecialPerk(park)) {
+      frame.classList.add("special-hit");
+    }
+  }
+}
+
+function forceReelDisplay(index, park, locked = true) {
+  const frame = document.getElementById(`frame${index + 1}`);
+  const track = document.getElementById(`reel${index + 1}`);
+  if (!frame || !track || !park) return;
+
+  track.innerHTML = `
+    <div class="reel-item">
+      <img src="${park.icon}" alt="${park.name}">
+      <div class="reel-item-name">${park.name}</div>
+    </div>
+  `;
+  track.style.transform = "translateY(0px)";
+
+  frame.classList.remove(
+    "stopping",
+    "ready-stop",
+    "special-hit",
+    "rainbow-hit",
+    "flash",
+    "flash-hold",
+    "frame-run",
+    "frame-lit",
+    "frame-hit",
+    "frame-win-hold"
+  );
+
+  if (locked) {
+    frame.classList.add("ready-stop");
+
+    if (isRainbowPerk(park)) {
+      frame.classList.add("rainbow-hit");
+    } else if (isSpecialPerk(park)) {
+      frame.classList.add("special-hit");
+    }
+  }
+}
+
+function shouldAvoidDuplicatePark(park) {
+  if (!park) return false;
+  return !isSpecialPerk(park) && !isRainbowPerk(park);
+}
+
+function getUsedParkNamesBeforeReel(currentIndex) {
+  const used = new Set();
+
+  for (let i = 0; i < REEL_COUNT; i++) {
+    if (i === currentIndex) continue;
+    if (!reelLocked[i]) continue;
+
+    const park = finalParks[i];
+    if (!shouldAvoidDuplicatePark(park)) continue;
+
+    used.add(park.name);
+  }
+
+  return used;
+}
+
+function findAdjustedStopIndex(index, startIndex) {
+  const source = reelSourceOrders[index];
+  if (!source || !source.length) return startIndex;
+
+  const startPark = source[startIndex];
+  if (!shouldAvoidDuplicatePark(startPark)) {
+    return startIndex;
+  }
+
+  const usedNames = getUsedParkNamesBeforeReel(index);
+
+  if (!usedNames.has(startPark.name)) {
+    return startIndex;
+  }
+
+  for (let offset = 1; offset < source.length; offset++) {
+    const nextIndex = (startIndex + offset) % source.length;
+    const nextPark = source[nextIndex];
+
+    if (!shouldAvoidDuplicatePark(nextPark)) {
+      return nextIndex;
+    }
+
+    if (!usedNames.has(nextPark.name)) {
+      return nextIndex;
+    }
+  }
+
+  return startIndex;
+}
+
+function settleReelToCurrent(index, duration = 140) {
+  return new Promise(resolve => {
+    const track = document.getElementById(`reel${index + 1}`);
+    const source = reelSourceOrders[index];
+
+    if (!track || !source || !source.length) {
+      resolve(null);
+      return;
+    }
+
+    const currentIndex = reelCurrentIndexes[index] ?? 0;
+    const adjustedIndex = findAdjustedStopIndex(index, currentIndex);
+    const decidedPark = source[adjustedIndex];
+
+    if (!decidedPark) {
+      resolve(null);
+      return;
+    }
+
+    const startY = reelPositions[index];
+    const baseLoopHeight = source.length * REEL_HEIGHT;
+
+    let targetY = -(adjustedIndex * REEL_HEIGHT);
+
+    while (targetY < startY) {
+      targetY += REEL_HEIGHT;
+    }
+
+    if (targetY > 0) {
+      targetY -= baseLoopHeight;
+    }
+
+    const startTime = performance.now();
+
+    function animate(now) {
+      const t = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+
+      const y = startY + (targetY - startY) * eased;
+      track.style.transform = `translateY(${y}px)`;
+      reelPositions[index] = y;
+
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        track.style.transform = `translateY(${targetY}px)`;
+        reelPositions[index] = targetY;
+        reelCurrentIndexes[index] = adjustedIndex;
+        resolve(decidedPark);
+      }
+    }
+
+    requestAnimationFrame(animate);
+  });
+}
+
+function spinReel(index) {
+  const track = document.getElementById(`reel${index + 1}`);
+  const frame = document.getElementById(`frame${index + 1}`);
+  if (!track || !frame) return;
+
+  frame.classList.remove("special-hit", "ready-stop", "stopping", "rainbow-hit");
+
+  const baseLoopHeight = allParks.length * REEL_HEIGHT;
+
+  if (reelAnimFrames[index]) {
+    cancelAnimationFrame(reelAnimFrames[index]);
+    reelAnimFrames[index] = null;
+  }
+
+  if (reelIntervals[index]) {
+    clearInterval(reelIntervals[index]);
+    reelIntervals[index] = null;
+  }
+
+  let y = typeof reelPositions[index] === "number"
+    ? reelPositions[index]
+    : -baseLoopHeight;
+
+  let speed = 1750 + index * 120;
+  let lastTime = 0;
+
+  reelPositions[index] = y;
+
+  function loop(now) {
+    if (reelLocked[index]) {
+      reelAnimFrames[index] = null;
+      return;
+    }
+
+    if (!lastTime) lastTime = now;
+    const dt = Math.min((now - lastTime) / 1000, 0.05);
+    lastTime = now;
+
+    y += speed * dt;
+
+    if (y >= 0) {
+      y = -baseLoopHeight;
+    }
+
+    reelPositions[index] = y;
+    track.style.transform = `translateY(${y}px)`;
+
+    const normalized = ((-y % baseLoopHeight) + baseLoopHeight) % baseLoopHeight;
+    const idx = Math.floor(normalized / REEL_HEIGHT) % allParks.length;
+    reelCurrentIndexes[index] = idx;
+
+    reelAnimFrames[index] = requestAnimationFrame(loop);
+  }
+
+  reelAnimFrames[index] = requestAnimationFrame(loop);
+}
+
+function spinToFreePark(index, delay = 900) {
+  const track = document.getElementById(`reel${index + 1}`);
+  const frame = document.getElementById(`frame${index + 1}`);
+  if (!track || !frame) return;
+
+  if (reelIntervals[index]) {
+    clearInterval(reelIntervals[index]);
+    reelIntervals[index] = null;
+  }
+
+  frame.classList.remove("special-hit", "rainbow-hit", "ready-stop", "stopping");
+
+  const baseLoopHeight = allParks.length * REEL_HEIGHT;
+  let y = -baseLoopHeight;
+  let speed = 82 + index * 5;
+
+  reelIntervals[index] = setInterval(() => {
+    y += speed;
+
+    if (y >= 0) {
+      y = -baseLoopHeight;
+    }
+
+    track.style.transform = `translateY(${y}px)`;
+  }, 50);
+
+  setTimeout(() => {
+    if (reelIntervals[index]) {
+      clearInterval(reelIntervals[index]);
+      reelIntervals[index] = null;
+    }
+
+    reelLocked[index] = true;
+    updateStopButtonGlow();
+
+    finalParks[index] = FREE_PARK;
+forceReelDisplay(index, FREE_PARK, true);
+
+    if (index === 3 && !killerLocked) {
+  stopKillerReel();
+}
+
+    checkAllReelsStopped();
+  }, delay);
+}
+
+function settleKillerToCurrent(duration = 140) {
+  return new Promise(resolve => {
+    const track = document.getElementById("killerReel");
+    const killers = getAvailableKillers();
+
+    if (!track || !killers.length) {
+      resolve(null);
+      return;
+    }
+
+    const currentIndex = killerCurrentIndex ?? 0;
+    const decidedKiller = killers[currentIndex];
+
+    if (!decidedKiller) {
+      resolve(null);
+      return;
+    }
+
+    const startY = killerReelPosition;
+    const baseLoopHeight = killers.length * KILLER_REEL_HEIGHT;
+
+    let targetY = -(currentIndex * KILLER_REEL_HEIGHT);
+
+    while (targetY < startY) {
+      targetY += KILLER_REEL_HEIGHT;
+    }
+
+    if (targetY > 0) {
+      targetY -= baseLoopHeight;
+    }
+
+    const startTime = performance.now();
+
+    function animate(now) {
+      const t = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+
+      const y = startY + (targetY - startY) * eased;
+      track.style.transform = `translateY(${y}px)`;
+      killerReelPosition = y;
+
+      if (t < 1) {
+  requestAnimationFrame(animate);
+} else {
+  track.style.transform = `translateY(${targetY}px)`;
+  killerReelPosition = targetY;
+  resolve(decidedKiller);
+}
+    }
+
+    requestAnimationFrame(animate);
+  });
+}
+
+function spinKillerReel() {
+  const track = document.getElementById("killerReel");
+  const frame = document.getElementById("killerFrame");
+  const killers = getAvailableKillers();
+
+  if (!track || !frame) return;
+
+  if (!killers.length) {
+    killerLocked = true;
+    finalKiller = null;
+    updateKillerReelVisual(null, true);
+    return;
+  }
+
+  frame.classList.remove("ready-stop", "stopping", "special-hit", "final-view");
+
+  const baseLoopHeight = killers.length * KILLER_REEL_HEIGHT;
+
+  if (killerAnimFrame) {
+    cancelAnimationFrame(killerAnimFrame);
+    killerAnimFrame = null;
+  }
+
+  let y = -baseLoopHeight;
+  let speed = 1450;
+  let lastTime = 0;
+
+  killerReelPosition = y;
+  killerLocked = false;
+
+  function loop(now) {
+    if (killerLocked) {
+      killerAnimFrame = null;
+      return;
+    }
+
+    if (!lastTime) lastTime = now;
+    const dt = Math.min((now - lastTime) / 1000, 0.05);
+    lastTime = now;
+
+    y += speed * dt;
+
+    if (y >= 0) {
+      y = -baseLoopHeight;
+    }
+
+    killerReelPosition = y;
+    track.style.transform = `translateY(${y}px)`;
+
+    const normalized = ((-y % baseLoopHeight) + baseLoopHeight) % baseLoopHeight;
+const idx = Math.floor(normalized / KILLER_REEL_HEIGHT) % killers.length;
+killerCurrentIndex = idx;
+
+    killerAnimFrame = requestAnimationFrame(loop);
+  }
+
+  killerAnimFrame = requestAnimationFrame(loop);
+}
+
+async function stopKillerReel() {
+  if (killerLocked) return;
+
+  const frame = document.getElementById("killerFrame");
+  if (frame) frame.classList.add("stopping");
+
+  if (killerAnimFrame) {
+    cancelAnimationFrame(killerAnimFrame);
+    killerAnimFrame = null;
+  }
+
+  const decidedKiller = await settleKillerToCurrent(140);
+
+  killerLocked = true;
+
+  if (decidedKiller) {
+    finalKiller = decidedKiller;
+  } else {
+    finalKiller = null;
+  }
+
+  updateKillerReelVisual(finalKiller, true);
+
+if (frame) {
+  frame.classList.remove("stopping");
+  frame.classList.add("ready-stop");
+}
+
+checkAllReelsStopped();
+}
+
+function finalizeResult() {
+  clearAutoStopTimers();
+
+  for (let i = 0; i < REEL_COUNT; i++) {
+    const park = finalParks[i];
+    if (!park) continue;
+
+    forceReelDisplay(i, park, true);
+  }
+
+  updateKillerReelVisual(finalKiller, true);
+
+  const parkNames = finalParks.map(park => park?.name || "").filter(Boolean);
+
+  let text = "";
+  if (finalKiller) {
+    text = `${finalKiller.name} / ${parkNames.join(" / ")}`;
+  } else {
+    text = parkNames.join(" / ");
+  }
+
+  const input = document.getElementById("resultText");
+  if (input) input.value = text;
+
+  const hasRainbow = finalParks.some(park => isRainbowPerk(park));
+  const hasSpecial = finalParks.some(park => isSpecialPerk(park));
+
+  for (let i = 0; i < REEL_COUNT; i++) {
+    const frame = document.getElementById(`frame${i + 1}`);
+    const park = finalParks[i];
+    if (!frame) continue;
+
+    frame.classList.remove(
+      "stopping",
+      "ready-stop",
+      "flash",
+      "flash-hold",
+      "special-hit",
+      "rainbow-hit",
+      "frame-run",
+      "frame-lit",
+      "frame-hit",
+      "frame-win-hold"
+    );
+
+    if (isRainbowPerk(park)) {
+      frame.classList.add("rainbow-hit");
+    } else if (isSpecialPerk(park)) {
+      frame.classList.add("special-hit");
+    } else {
+      frame.classList.add("ready-stop");
+    }
+  }
+
+  const killerFrame = document.getElementById("killerFrame");
+  if (killerFrame) {
+    killerFrame.classList.remove("stopping");
+    killerFrame.classList.add("ready-stop");
+  }
+
+  if (hasRainbow) {
+    triggerSpecialFlash(true);
+  } else if (hasSpecial) {
+    triggerSpecialFlash(false);
+  }
+
+  isShuffling = false;
+  isStopping = false;
+  isUraProcessing = false;
+  uraResolved = true;
+  uraTargetIndexes = [];
+  uraSpinPendingCount = 0;
+  isFinalChecking = false;
+
+  currentSpecialHit = false;
+  currentFreeReelIndexes = [];
+
+  const startLever = document.getElementById("startLever");
+  if (startLever) startLever.disabled = false;
+
+  clearAllStopButtonGlow();
+  setStartLeverGlow(false);
+
+  for (let i = 0; i < REEL_COUNT; i++) {
+    const frame = document.getElementById(`frame${i + 1}`);
+    const park = finalParks[i];
+    if (!frame || !park) continue;
+
+    attachPerkTooltipEvents(frame, park);
+  }
+
+  setStatus("停止完了");
+}
+
+async function runUraLotteryIfNeeded() {
+  if (uraResolved || isUraProcessing) return;
+
+  const noPerkIndexes = getNoPerkIndexes();
+
+  if (noPerkIndexes.length === 0) {
+    finalizeResult();
+
+    stopKakuteiSe();
+playKakuteiSe();
+    return;
+  }
+
+  uraResolved = true;
+  isUraProcessing = true;
+  const sessionId = ++uraSessionId;
+
+  const startLever = document.getElementById("startLever");
+  if (startLever) startLever.disabled = true;
+
+  setStopButtonsEnabled(false);
+
+  const isHit = Math.random() < URA_HIT_RATE;
+
+  await flashAllReels(isHit ? 3 : 2, isHit);
+
+  if (sessionId !== uraSessionId) return;
+
+  // 裏抽選の結果音は 0.4 秒後
+  await sleep(200);
+
+  if (sessionId !== uraSessionId) return;
+
+  if (!isHit) {
+    // ハズレ時は kakutei を絶対に鳴らさない
+    stopKakuteiSe();
+    await sleep(200);
+    playUraHazure();
+    finalizeResult();
+    return;
+  }
+
+  stopKakuteiSe();
+  playUraAtari();
+
+  for (const i of noPerkIndexes) {
+    const frame = document.getElementById(`frame${i + 1}`);
+    frame?.classList.remove("flash-hold", "flash");
+  }
+
+  const revivalPlan = pickRevivalPlan(noPerkIndexes);
+
+  if (!revivalPlan.length) {
+    await sleep(800);
+    stopKakuteiSe();
+    playUraHazure();
+    finalizeResult();
+    return;
+  }
+
+  uraTargetIndexes = revivalPlan.map(x => x.reelIndex);
+  uraSpinPendingCount = revivalPlan.length;
+
+  const results = await Promise.all(
+    revivalPlan.map(({ reelIndex, perkName }) =>
+      spinRevivalReel(reelIndex, perkName, sessionId)
+    )
+  );
+
+  if (sessionId !== uraSessionId) return;
+
+  const successCount = results.filter(Boolean).length;
+  uraSpinPendingCount = 0;
+
+  if (successCount === 0) {
+    stopKakuteiSe();
+    await sleep(400);
+    playUraHazure();
+  }
+
+  finalizeResult();
+}
+
+function setFrameRun() {
+  FRAME_IDS.forEach(id => {
+    const frame = document.getElementById(id);
+    if (!frame) return;
+    frame.classList.remove("frame-lit", "frame-hit", "flash", "flash-hold");
+    frame.classList.add("frame-run");
+  });
+}
+
+function clearPerkTooltipEvents() {
+  for (let i = 0; i < REEL_COUNT; i++) {
+    const frame = document.getElementById(`frame${i + 1}`);
+    if (!frame) continue;
+
+    frame.onmouseenter = null;
+    frame.onmousemove = null;
+    frame.onmouseleave = null;
+  }
+
+  hidePerkTooltip();
+}
+
+function startShuffle() {
+  if (isShuffling || isStopping || isDoorChanceProcessing) return;
+
+  clearAutoStopTimers();
+  clearPerkTooltipEvents();
+
+  // 前回のドア当たり動画を、次回スタート押下時にだけ消す
+  if (holdDoorVisualUntilNextStart) {
+    resetDoorChanceVisuals();
+    holdDoorVisualUntilNextStart = false;
+  }
+
+  isFinalChecking = false;
+  clearAllStopButtonGlow();
+  setFrameRun();
+  playStartSe();
+
+  isUraProcessing = false;
+  uraResolved = false;
+  uraTargetIndexes = [];
+  uraSpinPendingCount = 0;
+  uraSessionId++;
+
+  // 1枚表示になっている通常リールだけ再構築
+  for (let i = 0; i < REEL_COUNT; i++) {
+    const track = document.getElementById(`reel${i + 1}`);
+    const frame = document.getElementById(`frame${i + 1}`);
+
+    if (frame) {
+      frame.classList.remove(
+        "special-hit",
+        "rainbow-hit",
+        "ready-stop",
+        "stopping",
+        "flash",
+        "flash-hold",
+        "frame-run",
+        "frame-lit",
+        "frame-hit",
+        "frame-flash-all",
+        "frame-win-hold"
+      );
+    }
+
+    if (track && track.children.length <= 1) {
+      buildReel(`reel${i + 1}`, i * 7);
+    }
+  }
+
+  const killerFrameEl = document.getElementById("killerFrame");
+  const killerTrack = document.getElementById("killerReel");
+
+  if (killerFrameEl) {
+    killerFrameEl.classList.remove(
+      "special-hit",
+      "rainbow-hit",
+      "ready-stop",
+      "stopping",
+      "final-view"
+    );
+  }
+
+  // キラーリールも1枚表示のときだけ再構築
+  if (killerTrack && killerTrack.children.length <= 1) {
+    buildKillerReel();
+  }
+
+  isShuffling = true;
+  isStopping = false;
+  reelLocked = [false, false, false, false];
+  killerLocked = false;
+
+  currentSpecialHit = pickSpecialHit();
+  currentFreeReelIndexes = currentSpecialHit ? pickFreeReelIndexes() : [];
+
+  // 通常枠は重複なしで先に決定
+  const normalResults = getRandomParks();
+  let normalCursor = 0;
+
+  finalParks = Array.from({ length: REEL_COUNT }, (_, index) => {
+    if (isFreeReel(index)) return FREE_PARK;
+    const park = normalResults[normalCursor];
+    normalCursor++;
+    return park;
+  });
+
+  const availableKillers = getAvailableKillers();
+  finalKiller = availableKillers.length > 0 ? pickRandomKiller() : null;
+
+  setStatus(
+    currentSpecialHit
+      ? `当たり演出発動！ 自由パーク ${currentFreeReelIndexes.length} 枠`
+      : "各ストップボタンで停止してください"
+  );
+
+  const startLever = document.getElementById("startLever");
+  if (startLever) startLever.disabled = true;
+
+  if (currentSpecialHit) {
+    const hasRainbow = currentFreeReelIndexes.length > 0;
+    setStartLeverGlow(true, hasRainbow);
+    playAtariSe();
+    triggerSpecialFlash(hasRainbow);
+  }
+
+  for (let i = 0; i < REEL_COUNT; i++) {
+    const btn = document.getElementById(`stopBtn${i + 1}`);
+
+    if (isFreeReel(i)) {
+      reelLocked[i] = false;
+      if (btn) btn.disabled = true;
+
+      // 自由確定演出用だけは再構築してOK
+      buildReel(`reel${i + 1}`, (i * 11) % allParks.length);
+      spinToFreePark(i, 900 + i * 140);
+    } else {
+      reelLocked[i] = false;
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  updateStopButtonGlow();
+
+  if (availableKillers.length > 0) {
+    spinKillerReel();
+  } else {
+    killerLocked = true;
+    updateKillerReelVisual(null, true);
+  }
+
+  for (let i = 0; i < REEL_COUNT; i++) {
+    if (isFreeReel(i)) continue;
+    spinReel(i);
+  }
+
+  const resultInput = document.getElementById("resultText");
+  if (resultInput) resultInput.value = "";
+
+   if (currentSpecialHit && currentFreeReelIndexes.length === 4) {
+    for (let i = 0; i < REEL_COUNT; i++) {
+      const btn = document.getElementById(`stopBtn${i + 1}`);
+      if (btn) btn.disabled = true;
+    }
+  }
+
+  if (autoStopEnabled) {
+    scheduleAutoStopSequence();
+  }
+
+  checkAllReelsStopped();
+}
+
+async function stopReel(index) {
+  if (!isShuffling) return;
+  if (reelLocked[index]) return;
+  if (isFreeReel(index)) return;
+
+  const btn = document.getElementById(`stopBtn${index + 1}`);
+  if (btn) btn.disabled = true;
+
+  const frame = document.getElementById(`frame${index + 1}`);
+  if (frame) {
+    frame.classList.add("stopping");
+    frame.classList.remove("frame-run", "frame-lit", "flash", "flash-hold");
+  }
+
+  if (reelIntervals[index]) {
+    clearInterval(reelIntervals[index]);
+    reelIntervals[index] = null;
+  }
+
+  if (reelAnimFrames[index]) {
+    cancelAnimationFrame(reelAnimFrames[index]);
+    reelAnimFrames[index] = null;
+  }
+
+  const decidedPark = await settleReelToCurrent(index, 140);
+
+  reelLocked[index] = true;
+  updateStopButtonGlow();
+
+  if (decidedPark) {
+    finalParks[index] = decidedPark;
+    forceReelDisplay(index, decidedPark, true);
+  }
+
+  if (index === 3) {
+    stopKillerReel();
+  }
+
+  playStopSe();
+
+  checkAllReelsStopped();
+}
+
+async function checkAllReelsStopped() {
+  if (isFinalChecking) return;
+  if (!reelLocked.every(v => v)) return;
+  if (!killerLocked) return;
+
+  isFinalChecking = true;
+  isShuffling = false;
+  isStopping = true;
+  clearAllStopButtonGlow();
+
+  const hasNoPerk = finalParks.some(p => p && p.name === "パークなし");
+
+  if (hasNoPerk) {
+    const shouldGoUra = Math.random() < URA_TRIGGER_RATE;
+
+    if (shouldGoUra) {
+      await runUraLotteryIfNeeded();
+    } else {
+      finalizeResult();
+      playKakuteiSe();
+    }
+    return;
+  }
+
+  await checkFrameEvent();
+}
+
+function playDoreyureSe() {
+  if (!seEnabled || !doreyureSound) return;
+  doreyureSound.pause();
+  doreyureSound.currentTime = 0;
+  doreyureSound.volume  = SE_BASE_VOLUME.doreyure  * seVolume;
+  doreyureSound.play().catch(() => {});
+}
+
+function playHakaiSe() {
+  if (!seEnabled || !hakaiSound) return;
+  hakaiSound.pause();
+  hakaiSound.currentTime = 0;
+  hakaiSound.volume = SE_BASE_VOLUME.hakai * seVolume;
+  hakaiSound.play().catch(() => {});
+}
+
+function resetDoorChanceVisuals() {
+  // 1. 先にドアを復活
+  if (slotIta) {
+    slotIta.style.display = "block";
+    slotIta.classList.remove("shaking");
+  }
+
+  // 2. ほんの少し遅らせて動画を停止・非表示
+  if (parkChanceVideo) {
+    setTimeout(() => {
+      parkChanceVideo.pause();
+      parkChanceVideo.currentTime = 0;
+      parkChanceVideo.style.display = "none";
+    }, 80);
+  }
+
+  isDoorChanceProcessing = false;
+}
+
+function startDoorChanceLoopVideo() {
+  if (!parkChanceVideo) return;
+  parkChanceVideo.style.display = "block";
+  parkChanceVideo.currentTime = 0;
+  parkChanceVideo.play().catch(() => {});
+}
+
+async function startDoorFreedomSequence() {
+  // 自動で4リールをもう一度回して「自由確定」に揃える
+  isShuffling = true;
+  isStopping = false;
+  isFinalChecking = false;
+
+  currentSpecialHit = true;
+  currentFreeReelIndexes = [0, 1, 2, 3];
+
+  reelLocked = [false, false, false, false];
+
+  for (let i = 0; i < REEL_COUNT; i++) {
+    const btn = document.getElementById(`stopBtn${i + 1}`);
+    if (btn) btn.disabled = true;
+
+    const frame = document.getElementById(`frame${i + 1}`);
+    if (frame) {
+      frame.classList.remove(
+        "special-hit",
+        "rainbow-hit",
+        "ready-stop",
+        "stopping",
+        "flash",
+        "flash-hold",
+        "frame-run",
+        "frame-lit",
+        "frame-hit",
+        "frame-flash-all",
+        "frame-win-hold"
+      );
+    }
+
+    buildReel(`reel${i + 1}`, (i * 11) % allParks.length);
+    spinToFreePark(i, 700 + i * 130);
+  }
+
+  setStartLeverGlow(true, true);
+  setStatus("PARK CHANCE!! 自由確定揃い");
+}
+
+async function runDoorChanceIfNeeded() {
+  if (isDoorChanceProcessing) {
+    finalizeResult();
+    return;
+  }
+
+  isDoorChanceProcessing = true;
+
+  const shouldTrigger = Math.random() < DOOR_EVENT_TRIGGER_RATE;
+
+  if (!shouldTrigger) {
+    isDoorChanceProcessing = false;
+    finalizeResult();
+    playKakuteiSe();
+    return;
+  }
+
+  setStatus("???");
+
+  // 音は1回だけ
+  playDoreyureSe();
+
+  // ドンドンドン
+  for (let i = 0; i < 3; i++) {
+    if (slotIta) {
+      slotIta.classList.remove("shaking");
+      void slotIta.offsetWidth;
+      slotIta.classList.add("shaking");
+    }
+    await sleep(500);
+  }
+
+  const isHit = Math.random() < DOOR_EVENT_HIT_RATE;
+
+  if (!isHit) {
+    if (slotIta) {
+      slotIta.classList.remove("shaking");
+    }
+
+    isDoorChanceProcessing = false;
+    finalizeResult();
+    playKakuteiSe();
+    return;
+  }
+
+  // 当たり
+  if (slotIta) {
+    slotIta.classList.remove("shaking");
+    slotIta.style.display = "none";
+  }
+
+  playHakaiSe();
+  playGekiatuSound();
+  triggerSpecialFlash(true);
+  startDoorChanceLoopVideo();
+
+  // 次回スタート押下まで動画を残す
+  holdDoorVisualUntilNextStart = true;
+
+  // その場で4リールを自由確定に揃える
+  await startDoorFreedomSequence();
+
+  isDoorChanceProcessing = false;
+}
+
+function copyResult() {
+  const input = document.getElementById("resultText");
+  if (!input) return;
+
+  const text = input.value.trim();
+  if (!text) return;
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    return;
+  }
+
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  input.setSelectionRange(0, 0);
+  input.blur();
+}
+
+function goToKillerPage() {
+  sessionStorage.setItem("dbd_page_switching", "1");
+  location.href = "index_DBDsloterkiller.html";
+}
+
+function goToSurvivorPage() {
+  sessionStorage.setItem("dbd_page_switching", "1");
+  location.href = "index_DBDsloter.html";
+}
+
+function stopAllSounds() {
+  [bgmSound, startSound, stopSound, kakuteiSound, atariSound, uraAtariSound, uraHazureSound, gekiatuSound, doreyureSound, hakaiSound].forEach(audio => {
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+  });
+}
+
+const BASE_WIDTH = 1600;
+const BASE_HEIGHT = 900;
+
+function fitGameToWindow() {
+  const stage = document.getElementById("app-stage");
+  const root = document.getElementById("game-root");
+  if (!stage || !root) return;
+
+  const stageWidth = stage.clientWidth;
+  const stageHeight = stage.clientHeight;
+
+  const scaleX = stageWidth / BASE_WIDTH;
+  const scaleY = stageHeight / BASE_HEIGHT;
+  const scale = Math.min(scaleX, scaleY);
+
+  root.style.transform = `scale(${scale})`;
+}
+
+    // ===== 音量 + 自動再生制限対策 =====
+window.addEventListener("DOMContentLoaded", () => {
+  fitGameToWindow();
+
+  sessionStorage.removeItem("dbd_page_switching");
+
+  stopAllSounds();
+
+  setBgmVolume(5);
+  setSeVolume(10);
+
+  const savedAutoStop = localStorage.getItem("dbd_killer_auto_stop_enabled");
+  autoStopEnabled = savedAutoStop === "1";
+  updateAutoStopButton();
+
+  setStatus("待機中");
+
+  renderKillerCheckboxes();
+  initReels();
+
+  const availableKillers = getAvailableKillers();
+  finalKiller = availableKillers.length > 0 ? pickRandomKiller() : null;
+  updateKillerReelVisual(finalKiller, true);
+
+  const playAudio = () => {
+    if (bgmEnabled) {
+      bgmSound?.play().catch(() => {});
+    }
+    document.removeEventListener("click", playAudio);
+  };
+
+  document.addEventListener("click", playAudio);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+
+  const modal = document.getElementById("killerFilterPanel");
+  if (!modal) return;
+
+  if (!modal.classList.contains("hidden")) {
+    modal.classList.add("hidden");
+  }
+});
+
+window.addEventListener("resize", fitGameToWindow);
+</script>
+
+<div id="perkTooltip" class="perk-tooltip hidden">
+  <div id="perkTooltipTitle" class="perk-tooltip-title"></div>
+  <div id="perkTooltipDesc" class="perk-tooltip-desc"></div>
+</div>
+  
+</body>
+</html>

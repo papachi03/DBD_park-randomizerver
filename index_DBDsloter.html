@@ -1,0 +1,4942 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>DBDパークスロット</title>
+<style>
+html, body{
+  width:100%;
+  height:100%;
+  margin:0;
+  padding:0;
+  overflow:hidden;
+}
+
+body{
+  font-family:sans-serif;
+  text-align:center;
+  background:#000;
+  color:#fff;
+  text-shadow:1px 1px 2px #000;
+}
+
+#app-stage{
+  width:100vw;
+  height:100vh;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#000;
+}
+
+#game-root{
+  width:1600px;
+  height:900px;
+  position:relative;
+  transform-origin:center center;
+  will-change:transform;
+  backface-visibility:hidden;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* ===================== */
+/* 共通ボタン */
+/* ===================== */
+
+button{
+  cursor:pointer;
+}
+
+.mode-btn{
+  padding:10px 18px;
+  font-size:16px;
+  border:none;
+  border-radius:999px;
+  background:rgba(255,255,255,0.18);
+  color:#fff;
+  margin:0;
+}
+
+.mini-sound-btn{
+  padding:8px 12px;
+  font-size:13px;
+  border:none;
+  border-radius:999px;
+  background:rgba(0,0,0,0.55);
+  color:#fff;
+  box-shadow:0 4px 10px rgba(0,0,0,0.25);
+  margin:0;
+}
+
+.control-btn{
+  width:100px;
+  height:52px;
+  border:none;
+  border-radius:8px;
+  background:#666;
+  color:#fff;
+  cursor:pointer;
+  font-size:18px;
+  font-weight:700;
+}
+
+.mode-btn:hover,
+.mini-sound-btn:hover{
+  background:rgba(255,255,255,0.24);
+}
+
+/* ===================== */
+/* 画面全体フラッシュ */
+/* ===================== */
+
+.screen-flash{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  background:
+    radial-gradient(circle at center,
+      rgba(255,230,120,0.30) 0%,
+      rgba(255,140,0,0.16) 35%,
+      rgba(255,60,0,0.08) 60%,
+      rgba(0,0,0,0) 100%);
+  transition:opacity 0.12s ease;
+  z-index:9999;
+}
+
+.screen-flash.show{
+  opacity:1;
+}
+
+.screen-flash.rainbow,
+.screen-flash.rainbow-flash{
+  background:
+    radial-gradient(circle at center,
+      rgba(255,255,255,0.22) 0%,
+      rgba(255,80,120,0.18) 18%,
+      rgba(255,180,80,0.16) 34%,
+      rgba(255,240,80,0.14) 48%,
+      rgba(80,255,140,0.14) 62%,
+      rgba(80,190,255,0.14) 76%,
+      rgba(180,80,255,0.14) 88%,
+      rgba(0,0,0,0) 100%);
+  animation:rainbowFlashShift 0.7s linear infinite;
+}
+
+/* ===================== */
+/* 筐体ベース */
+/* ===================== */
+
+.slot-ui{
+  position:relative;
+  width:1600px;
+  height:900px;
+  margin:0 auto;
+  background-image:url("assets/background.png");
+  background-size:1600px 900px;
+  background-position:top left;
+  background-repeat:no-repeat;
+  overflow:hidden;
+}
+
+.slot-base{
+  position:absolute;
+  top:0;
+  left:0;
+  width:1600px;
+  height:900px;
+  display:block;
+  object-fit:fill;
+  user-select:none;
+  pointer-events:none;
+  z-index:1;
+}
+
+/* ===================== */
+/* 上部ヘッダー */
+/* ===================== */
+
+.slot-overlay-header{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:5;
+}
+
+.slot-lcd-ui{
+  position:absolute;
+  top:145px;
+  left:50%;
+  transform:translateX(-50%);
+  width:760px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  pointer-events:auto;
+  z-index:6;
+}
+
+.slot-control-row{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.slot-volume-row{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-top:-6px;
+}
+
+.slot-lcd-btn{
+  margin:0;
+}
+
+.slot-overlay-creator{
+  position:absolute;
+  top:258px;
+  left:50%;
+  transform:translateX(-50%);
+  width:760px;
+  text-align:center;
+  font-size:18px;
+  color:#fff;
+  opacity:0.95;
+  text-shadow:0 1px 2px #000;
+  pointer-events:auto;
+  z-index:6;
+}
+
+.slot-overlay-creator a{
+  color:#9be3ff;
+  text-decoration:none;
+}
+
+.slot-overlay-creator a:hover{
+  text-decoration:underline;
+}
+
+/* ===================== */
+/* ステータス / 結果 / 履歴 */
+/* ===================== */
+
+.status-badge{
+  position:absolute;
+  top:250px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:6px 14px;
+  border-radius:999px;
+  background:rgba(0,0,0,0.6);
+  border:1px solid rgba(255,255,255,0.2);
+  font-size:14px;
+  color:#fff;
+  z-index:20;
+}
+
+.result-area{
+  position:absolute;
+  top:724px;
+  left:54.6%;
+  transform:translateX(-50%);
+  width:695px;
+  height:74px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  z-index:20;
+}
+
+#resultText{
+  flex:1;
+  height:68px;
+  box-sizing:border-box;
+  padding:0 18px;
+  font-size:20px;
+  font-weight:900;
+  letter-spacing:0.5px;
+  border-radius:10px;
+  border:2px solid rgba(255,255,255,0.4);
+  background:#fff;
+  color:#111;
+  outline:none;
+  line-height:68px;
+  text-align:center;
+  box-shadow:
+    inset 0 1px 3px rgba(0,0,0,0.10),
+    0 2px 8px rgba(0,0,0,0.18);
+}
+
+/* ===================== */
+/* リール窓 */
+/* ===================== */
+
+.reel-window{
+  position:absolute;
+  width:200px;
+  height:200px;
+  z-index:10;
+}
+
+.reel-pos1{ top:312px; left:338px; }
+.reel-pos2{ top:312px; left:595px; }
+.reel-pos3{ top:312px; left:852px; }
+.reel-pos4{ top:312px; left:1110px; }
+
+.reel{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  border-radius:10px;
+  background:transparent;
+  border:none;
+  box-shadow:none;
+  position:relative;
+  z-index:11;
+}
+
+.reel-track{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  will-change:transform;
+}
+
+.reel-item{
+  width:100%;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  color:#fff;
+  text-align:center;
+}
+
+/* サバイバー・パーク側 */
+.reel-window .reel-item{
+  height:200px;
+  padding:8px;
+  gap:8px;
+}
+
+.reel-window .reel-item img{
+  width:108px;
+  height:108px;
+  object-fit:contain;
+  flex-shrink:0;
+}
+
+.reel-window .reel-item-name{
+  font-size:20px;
+  font-weight:bold;
+  line-height:1.15;
+  text-shadow:1px 1px 2px #000;
+}
+
+/* ===================== */
+/* 右上キラーリール */
+/* ===================== */
+
+.killer-side-window{
+  position:absolute;
+  top:32px;
+  left:1266px;
+  width:118px;
+  height:138px;
+  z-index:12;
+}
+
+.killer-side-reel{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  border-radius:8px;
+  background:transparent;
+  border:none;
+  box-shadow:none;
+  position:relative;
+}
+
+.killer-side-reel .reel-track{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  will-change:transform;
+}
+
+.killer-side-reel .reel-item{
+  height:138px;
+  padding:4px;
+  gap:4px;
+}
+
+.killer-side-reel .reel-item img{
+  width:88px;
+  height:110px;
+  object-fit:contain;
+  margin:0;
+}
+
+.killer-side-reel .reel-item-name{
+  font-size:11px;
+  line-height:1.1;
+  font-weight:bold;
+  text-shadow:1px 1px 2px #000;
+}
+
+/* ===================== */
+/* スタートレバー */
+/* ===================== */
+
+.slot-start-lever{
+  border:none;
+  background:transparent;
+  padding:0;
+  margin:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.slot-start-pos{
+  position:absolute;
+  top:560px;
+  left:400px;
+  width:128px;
+  height:128px;
+  z-index:12;
+}
+
+.slot-start-lever img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  pointer-events:none;
+  filter:drop-shadow(0 8px 8px rgba(0,0,0,0.55));
+  transition:transform .1s ease, filter .1s ease;
+}
+
+.slot-start-lever:hover img{
+  transform:translateY(-2px);
+}
+
+.slot-start-lever:active img{
+  transform:translateY(4px) scale(0.96);
+  filter:brightness(0.88) drop-shadow(0 4px 4px rgba(0,0,0,0.55));
+}
+
+.slot-start-lever:disabled{
+  cursor:not-allowed;
+}
+
+/* ===================== */
+/* 停止ボタン */
+/* ===================== */
+
+.slot-stop-group-overlay{
+  position:absolute;
+  top:585px;
+  left:620px;
+  width:520px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  z-index:12;
+}
+
+.stop-socket{
+  width:86px;
+  height:86px;
+  position:relative;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:transparent;
+  box-shadow:none;
+}
+
+.reel-stop-btn{
+  width:86px;
+  height:86px;
+  border:none;
+  background:transparent;
+  padding:0;
+  margin:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  position:relative;
+  z-index:2;
+}
+
+.reel-stop-btn img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  pointer-events:none;
+  filter:
+    drop-shadow(0 2px 2px rgba(0,0,0,0.45))
+    drop-shadow(0 0 4px rgba(255,60,40,0.10));
+  transition:transform .08s ease, filter .08s ease;
+}
+
+.reel-stop-btn:hover:not(:disabled) img{
+  transform:translateY(-1px) scale(1.03);
+}
+
+.reel-stop-btn:active:not(:disabled) img{
+  transform:translateY(3px) scale(0.95);
+  filter:brightness(0.82) drop-shadow(0 1px 1px rgba(0,0,0,0.45));
+}
+
+.reel-stop-btn:disabled{
+  cursor:not-allowed;
+}
+
+/* 半透明にしない */
+.reel-stop-btn:disabled img{
+  opacity:1;
+  filter:
+    drop-shadow(0 2px 2px rgba(0,0,0,0.45))
+    drop-shadow(0 0 4px rgba(255,60,40,0.10));
+}
+
+/* ===================== */
+/* 停止ボタン発光 */
+/* ===================== */
+
+.stop-socket.active-glow{
+  border-radius:50%;
+  box-shadow:
+    0 0 10px rgba(255, 40, 40, 0.55),
+    0 0 22px rgba(255, 20, 20, 0.45),
+    0 0 36px rgba(255, 0, 0, 0.30);
+  animation:stopSocketGlowPulse 0.8s ease-in-out infinite alternate;
+}
+
+.stop-socket.active-glow::after{
+  content:"";
+  position:absolute;
+  inset:-8px;
+  border-radius:50%;
+  border:2px solid rgba(255, 70, 70, 0.65);
+  box-shadow:
+    0 0 10px rgba(255, 70, 70, 0.45),
+    inset 0 0 10px rgba(255, 40, 40, 0.15);
+  pointer-events:none;
+}
+
+/* ===================== */
+/* リール演出 */
+/* ===================== */
+
+.reel.ready-stop{
+  box-shadow:
+    0 0 10px rgba(255,255,255,0.18),
+    0 0 18px rgba(255,255,255,0.10);
+}
+
+.reel.stopping{
+  box-shadow:
+    0 0 12px rgba(255,255,255,0.22),
+    0 0 22px rgba(255,255,255,0.14);
+}
+
+.reel.special-hit{
+  border:2px solid #ffd700;
+  box-shadow:
+    0 0 16px rgba(255,215,0,0.95),
+    0 0 32px rgba(255,140,0,0.70),
+    0 0 48px rgba(255,80,0,0.45);
+}
+
+.reel.rainbow-hit{
+  border:2px solid rgba(255,255,255,0.95);
+  box-shadow:
+    0 0 14px rgba(255,255,255,0.85),
+    0 0 28px rgba(255,0,120,0.45),
+    0 0 42px rgba(0,180,255,0.45),
+    0 0 56px rgba(255,230,0,0.35);
+  animation:
+    rainbowBorderShift 1.2s linear infinite,
+    rainbowPulse 0.7s ease-in-out infinite alternate;
+  overflow:hidden;
+}
+
+.reel.rainbow-hit::before{
+  content:"";
+  position:absolute;
+  inset:-18%;
+  background:conic-gradient(
+    from 0deg,
+    rgba(255, 0, 102, 0.00) 0deg,
+    rgba(255, 0, 102, 0.38) 35deg,
+    rgba(255, 140, 0, 0.38) 75deg,
+    rgba(255, 230, 0, 0.34) 110deg,
+    rgba(0, 255, 140, 0.34) 160deg,
+    rgba(0, 170, 255, 0.38) 215deg,
+    rgba(90, 120, 255, 0.38) 260deg,
+    rgba(200, 80, 255, 0.38) 310deg,
+    rgba(255, 0, 102, 0.38) 360deg
+  );
+  filter:blur(18px) saturate(1.25);
+  opacity:0.95;
+  animation:rainbowSpin 1.6s linear infinite;
+  pointer-events:none;
+  z-index:0;
+}
+
+.reel.rainbow-hit::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(
+      120deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.07) 30%,
+      rgba(255,255,255,0.42) 48%,
+      rgba(255,255,255,0.08) 62%,
+      rgba(255,255,255,0) 100%
+    );
+  transform:translateX(-140%);
+  animation:rainbowShine 1.1s ease-in-out infinite;
+  pointer-events:none;
+  z-index:1;
+}
+
+.reel.rainbow-hit .reel-track,
+.reel.rainbow-hit .reel-item{
+  position:relative;
+  z-index:2;
+}
+
+.reel.flash{
+  animation:reelFlash 0.16s ease-out;
+  border-color:rgba(255,255,255,0.95) !important;
+  box-shadow:
+    0 0 18px rgba(255,255,255,1),
+    0 0 34px rgba(255,255,255,0.85),
+    0 0 54px rgba(255,240,180,0.55),
+    0 0 78px rgba(255,255,255,0.35) !important;
+  z-index:3;
+}
+
+.reel.flash-hold{
+  border:2px solid rgba(255,255,255,0.98) !important;
+  box-shadow:
+    0 0 18px rgba(255,255,255,1),
+    0 0 34px rgba(255,255,255,0.88),
+    0 0 56px rgba(255,245,200,0.62),
+    0 0 84px rgba(255,255,255,0.38) !important;
+  animation:flashHoldPulse 0.55s ease-in-out infinite alternate;
+  z-index:3;
+}
+
+.reel.frame-run{
+  border-color:rgba(255,255,255,0.55);
+  box-shadow:
+    0 0 10px rgba(255,255,255,0.12),
+    0 4px 12px rgba(0,0,0,0.35);
+}
+
+.reel.frame-lit{
+  border:2px solid rgba(255,245,180,0.98);
+  box-shadow:
+    0 0 14px rgba(255,255,220,0.95),
+    0 0 28px rgba(255,220,120,0.72),
+    0 0 40px rgba(255,170,50,0.48);
+}
+
+.reel.frame-hit,
+.reel.frame-win-hold{
+  border:2px solid rgba(255,80,80,0.98);
+  box-shadow:
+    0 0 16px rgba(255,80,80,0.95),
+    0 0 32px rgba(255,30,30,0.75),
+    0 0 52px rgba(255,0,0,0.45);
+}
+
+/* ===================== */
+/* レバー演出 */
+/* ===================== */
+
+.slot-start-lever.atari-glow img{
+  animation:atariLeverGlow 0.55s ease-in-out infinite alternate;
+  filter:
+    drop-shadow(0 0 8px rgba(255,215,0,0.95))
+    drop-shadow(0 0 18px rgba(255,160,0,0.85))
+    drop-shadow(0 0 34px rgba(255,80,0,0.65));
+}
+
+.slot-start-lever.atari-rainbow img,
+.slot-start-lever.rainbow-glow img{
+  animation:
+    rainbowLeverPulse 0.65s ease-in-out infinite alternate,
+    rainbowLeverHue 1.4s linear infinite;
+  filter:
+    drop-shadow(0 0 10px rgba(255,255,255,0.95))
+    drop-shadow(0 0 18px rgba(255,60,180,0.65))
+    drop-shadow(0 0 28px rgba(0,180,255,0.65))
+    drop-shadow(0 0 40px rgba(255,220,0,0.55));
+}
+
+/* ===================== */
+/* キラー設定パネル */
+/* ===================== */
+
+/* ===================== */
+/* パーク設定モーダル */
+/* ===================== */
+
+.modal-overlay{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,0.72);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:200;
+}
+
+.modal-overlay.hidden{
+  display:none;
+}
+
+.perk-filter-modal{
+  width:980px;
+  max-width:92%;
+  max-height:78%;
+  display:flex;
+  flex-direction:column;
+  background:rgba(15,15,15,0.96);
+  border:1px solid rgba(255,255,255,0.18);
+  border-radius:16px;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(255,255,255,0.04) inset;
+  overflow:hidden;
+}
+
+.perk-filter-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:18px 20px;
+  border-bottom:1px solid rgba(255,255,255,0.12);
+  background:linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+}
+
+.perk-filter-title{
+  font-size:22px;
+  font-weight:900;
+  color:#fff;
+  letter-spacing:0.5px;
+}
+
+.perk-filter-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.perk-filter-body{
+  padding:18px;
+  overflow-y:auto;
+}
+
+.perk-filter-section{
+  margin-bottom:22px;
+}
+
+.perk-filter-section:last-child{
+  margin-bottom:0;
+}
+
+.perk-filter-section-title{
+  font-size:18px;
+  font-weight:900;
+  color:#ffd36b;
+  margin:0 0 12px 2px;
+  text-align:left;
+  letter-spacing:0.3px;
+  text-shadow:0 1px 2px rgba(0,0,0,0.45);
+}
+
+.perk-checkbox-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+  gap:10px 12px;
+  text-align:left;
+}
+
+.perk-checkbox-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:15px;
+  font-weight:700;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px;
+  padding:10px 12px;
+  color:#fff;
+}
+
+.perk-checkbox-item input{
+  transform:scale(1.15);
+  cursor:pointer;
+}
+
+.perk-filter-footer{
+  padding:14px 18px;
+  border-top:1px solid rgba(255,255,255,0.10);
+  background:rgba(255,255,255,0.03);
+  text-align:right;
+}
+
+.small-btn{
+  padding:8px 12px;
+  font-size:14px;
+  width:auto;
+  height:auto;
+  border-radius:8px;
+}
+
+/* ===================== */
+/* アニメーション */
+/* ===================== */
+
+@keyframes stopSocketGlowPulse{
+  from{
+    transform:scale(1);
+    box-shadow:
+      0 0 8px rgba(255, 40, 40, 0.42),
+      0 0 16px rgba(255, 20, 20, 0.32),
+      0 0 26px rgba(255, 0, 0, 0.20);
+  }
+  to{
+    transform:scale(1.04);
+    box-shadow:
+      0 0 12px rgba(255, 70, 70, 0.72),
+      0 0 26px rgba(255, 30, 30, 0.56),
+      0 0 42px rgba(255, 0, 0, 0.34);
+  }
+}
+
+@keyframes atariLeverGlow{
+  from{
+    transform:scale(1);
+    filter:
+      brightness(1.05)
+      drop-shadow(0 0 8px rgba(255,215,0,0.85))
+      drop-shadow(0 0 18px rgba(255,160,0,0.55));
+  }
+  to{
+    transform:scale(1.06);
+    filter:
+      brightness(1.28)
+      drop-shadow(0 0 14px rgba(255,215,0,1))
+      drop-shadow(0 0 28px rgba(255,140,0,0.95))
+      drop-shadow(0 0 44px rgba(255,60,0,0.75));
+  }
+}
+
+@keyframes rainbowSpin{
+  from{ transform:rotate(0deg) scale(1); }
+  to{ transform:rotate(360deg) scale(1); }
+}
+
+@keyframes rainbowBorderShift{
+  0%{ filter:hue-rotate(0deg) saturate(1.1); }
+  100%{ filter:hue-rotate(360deg) saturate(1.35); }
+}
+
+@keyframes rainbowPulse{
+  from{
+    transform:scale(1);
+    box-shadow:
+      0 0 14px rgba(255,255,255,0.75),
+      0 0 28px rgba(255,0,120,0.35),
+      0 0 42px rgba(0,180,255,0.35),
+      0 0 56px rgba(255,230,0,0.25);
+  }
+  to{
+    transform:scale(1.045);
+    box-shadow:
+      0 0 18px rgba(255,255,255,0.95),
+      0 0 34px rgba(255,0,120,0.55),
+      0 0 52px rgba(0,180,255,0.52),
+      0 0 70px rgba(255,230,0,0.42);
+  }
+}
+
+@keyframes rainbowShine{
+  0%{ transform:translateX(-140%); opacity:0; }
+  20%{ opacity:1; }
+  60%{ opacity:1; }
+  100%{ transform:translateX(140%); opacity:0; }
+}
+
+@keyframes rainbowLeverPulse{
+  from{ transform:scale(1); }
+  to{ transform:scale(1.08); }
+}
+
+@keyframes rainbowLeverHue{
+  0%{ filter:hue-rotate(0deg) brightness(1.08); }
+  100%{ filter:hue-rotate(360deg) brightness(1.28); }
+}
+
+@keyframes rainbowFlashShift{
+  from{ filter:hue-rotate(0deg) saturate(1.1); }
+  to{ filter:hue-rotate(360deg) saturate(1.35); }
+}
+
+@keyframes reelFlash{
+  0%{
+    transform:scale(1);
+    filter:brightness(1);
+  }
+  45%{
+    transform:scale(1.04);
+    filter:brightness(2.4);
+  }
+  100%{
+    transform:scale(1);
+    filter:brightness(1.08);
+  }
+}
+
+@keyframes flashHoldPulse{
+  from{
+    transform:scale(1);
+    filter:brightness(1.08);
+  }
+  to{
+    transform:scale(1.03);
+    filter:brightness(1.32);
+  }
+}
+
+.slot-chance-video{
+  position:absolute;
+  top:20px;
+  left:75px;
+  width:35%;
+  height:35%;
+  object-fit:contain;
+  display:none;
+  pointer-events:none;
+  z-index:0;
+}
+
+.slot-ita{
+  position:absolute;
+  top:22px;
+  left:142px;
+  width:24%;
+  height:24%;
+  object-fit:contain;
+  pointer-events:none;
+  z-index:1;
+  transform-origin:center center;
+}
+
+.slot-ita.shaking{
+  animation:itaShake 0.42s ease-in-out;
+}
+
+@keyframes itaShake{
+  0%   { transform:translate(0, 0) scale(1); }
+  12%  { transform:translate(-8px, 1px) rotate(-2deg) scale(1.02); }
+  24%  { transform:translate(8px, -1px) rotate(2deg) scale(1.02); }
+  36%  { transform:translate(-10px, 1px) rotate(-2.5deg) scale(1.03); }
+  48%  { transform:translate(10px, -1px) rotate(2.5deg) scale(1.03); }
+  60%  { transform:translate(-7px, 0) rotate(-1.8deg) scale(1.02); }
+  72%  { transform:translate(7px, 0) rotate(1.8deg) scale(1.02); }
+  100% { transform:translate(0, 0) rotate(0deg) scale(1); }
+}
+
+.volume-box{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(0,0,0,0.45);
+  color:#fff;
+  box-shadow:0 4px 10px rgba(0,0,0,0.20);
+  min-width:220px;
+  justify-content:center;
+}
+
+.volume-box label{
+  font-size:13px;
+  min-width:30px;
+  text-align:left;
+}
+
+.volume-box input[type="range"]{
+  width:110px;
+  accent-color:#ff5a5a;
+  cursor:pointer;
+}
+
+.volume-box span{
+  font-size:12px;
+  min-width:36px;
+  text-align:right;
+}
+
+/* ===================== */
+/* 4リール目 疲労系専用フレーム */
+/* ===================== */
+
+.exhaustion-reel-wrap{
+  overflow:visible;
+}
+
+.exhaustion-frame-overlay{
+  position:absolute;
+  inset:-18px;
+  pointer-events:none;
+  z-index:30;
+}
+
+/* 中央フレーム画像 */
+.exhaustion-core{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  opacity:1;
+  filter:drop-shadow(0 5px 10px rgba(0,0,0,0.45));
+  z-index:31;
+}
+
+/* 共通手パーツ */
+.exhaustion-arm{
+  position:absolute;
+  object-fit:contain;
+  pointer-events:none;
+  opacity:1;
+  will-change:transform;
+  filter:drop-shadow(0 8px 12px rgba(0,0,0,0.45));
+  z-index:32;
+}
+
+/* 左手：少し上にグググっと上がって戻る */
+.exhaustion-arm.left{
+  width:83px;      /* 104px → 約80% */
+  height:120px;    /* 150px → 約80% */
+  left:-18px;      /* 少し内側へ */
+  bottom:-20px;    /* 少し下げる */
+  transform-origin:78% 72%;
+  animation:exhaustionLeftHandLift 2.8s ease-in-out infinite;
+}
+
+/* 右手：左へ軽くガリガリ */
+.exhaustion-arm.right{
+  width:96px;
+  height:80px;
+  top:-8px;
+  right:-18px;
+  transform-origin:18% 68%;
+  animation:exhaustionRightHandScratch 1.2s steps(3, end) infinite;
+}
+
+/* 4リール目は青く光らせない */
+#frame4,
+#frame4.ready-stop,
+#frame4.stopping,
+#frame4.exhaustion-locked{
+  border:none !important;
+  box-shadow:none !important;
+  background:transparent !important;
+}
+
+/* 左手：持ち上げて戻す */
+@keyframes exhaustionLeftHandLift{
+  0%{
+    transform:translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  18%{
+    transform:translate3d(0, -2px, 0) rotate(-0.5deg) scale(1.005);
+  }
+  38%{
+    transform:translate3d(1px, -6px, 0) rotate(-1.2deg) scale(1.01);
+  }
+  52%{
+    transform:translate3d(0, -9px, 0) rotate(-1.8deg) scale(1.015);
+  }
+  68%{
+    transform:translate3d(-1px, -5px, 0) rotate(-1deg) scale(1.008);
+  }
+  100%{
+    transform:translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+}
+
+/* 右手：左に軽くガリガリ */
+@keyframes exhaustionRightHandScratch{
+  0%{
+    transform:translate3d(0,0,0) rotate(0deg);
+  }
+  25%{
+    transform:translate3d(-2px,0,0) rotate(-0.5deg);
+  }
+  50%{
+    transform:translate3d(-4px,1px,0) rotate(-1deg);
+  }
+  75%{
+    transform:translate3d(-2px,-1px,0) rotate(0.5deg);
+  }
+  100%{
+    transform:translate3d(0,0,0) rotate(0deg);
+  }
+}
+
+/* アニメーション */
+@keyframes exhaustionGripLeft{
+  0%{
+    transform:translate(-2px, -50%) rotate(-6deg) scale(1);
+    filter:
+      drop-shadow(0 4px 8px rgba(0,0,0,0.55))
+      drop-shadow(0 0 8px rgba(110,170,255,0.14));
+  }
+  35%{
+    transform:translate(3px, -50%) rotate(-10deg) scale(1.03);
+    filter:
+      drop-shadow(0 4px 8px rgba(0,0,0,0.55))
+      drop-shadow(0 0 12px rgba(140,200,255,0.22));
+  }
+  60%{
+    transform:translate(6px, -50%) rotate(-13deg) scale(1.05);
+    filter:
+      drop-shadow(0 5px 10px rgba(0,0,0,0.6))
+      drop-shadow(0 0 16px rgba(170,220,255,0.28));
+  }
+  100%{
+    transform:translate(-2px, -50%) rotate(-6deg) scale(1);
+    filter:
+      drop-shadow(0 4px 8px rgba(0,0,0,0.55))
+      drop-shadow(0 0 8px rgba(110,170,255,0.14));
+  }
+}
+
+@keyframes exhaustionGripRight{
+  0%{
+    transform:translate(2px, -50%) rotate(6deg) scale(1);
+    filter:
+      drop-shadow(0 4px 8px rgba(0,0,0,0.55))
+      drop-shadow(0 0 8px rgba(110,170,255,0.14));
+  }
+  35%{
+    transform:translate(-3px, -50%) rotate(10deg) scale(1.03);
+    filter:
+      drop-shadow(0 4px 8px rgba(0,0,0,0.55))
+      drop-shadow(0 0 12px rgba(140,200,255,0.22));
+  }
+  60%{
+    transform:translate(-6px, -50%) rotate(13deg) scale(1.05);
+    filter:
+      drop-shadow(0 5px 10px rgba(0,0,0,0.6))
+      drop-shadow(0 0 16px rgba(170,220,255,0.28));
+  }
+  100%{
+    transform:translate(2px, -50%) rotate(6deg) scale(1);
+    filter:
+      drop-shadow(0 4px 8px rgba(0,0,0,0.55))
+      drop-shadow(0 0 8px rgba(110,170,255,0.14));
+  }
+}
+
+@keyframes exhaustionFramePulse{
+  0%, 100%{
+    transform:scale(1);
+    opacity:0.88;
+    filter:
+      drop-shadow(0 0 8px rgba(120,180,255,0.10))
+      drop-shadow(0 0 16px rgba(70,120,255,0.07));
+  }
+  50%{
+    transform:scale(1.015);
+    opacity:1;
+    filter:
+      drop-shadow(0 0 12px rgba(150,210,255,0.18))
+      drop-shadow(0 0 24px rgba(70,130,255,0.12));
+  }
+}
+
+@keyframes exhaustionGripLeftTight{
+  from{
+    transform:translate(4px, -50%) rotate(-11deg) scale(1.04);
+  }
+  to{
+    transform:translate(9px, -50%) rotate(-15deg) scale(1.08);
+  }
+}
+
+@keyframes exhaustionGripRightTight{
+  from{
+    transform:translate(-4px, -50%) rotate(11deg) scale(1.04);
+  }
+  to{
+    transform:translate(-9px, -50%) rotate(15deg) scale(1.08);
+  }
+}
+
+@keyframes exhaustionFramePulseTight{
+  from{
+    transform:scale(1.01);
+    opacity:0.95;
+    filter:
+      drop-shadow(0 0 12px rgba(150,220,255,0.25))
+      drop-shadow(0 0 22px rgba(60,130,255,0.18));
+  }
+  to{
+    transform:scale(1.03);
+    opacity:1;
+    filter:
+      drop-shadow(0 0 18px rgba(180,240,255,0.35))
+      drop-shadow(0 0 34px rgba(70,150,255,0.24));
+  }
+}
+
+.perk-tooltip{
+  position:fixed;
+  min-width:260px;
+  max-width:420px;
+  padding:14px 16px;
+  border-radius:12px;
+  background:rgba(15,15,18,0.96);
+  border:1px solid rgba(255,255,255,0.18);
+  color:#fff;
+  box-shadow:0 10px 30px rgba(0,0,0,0.45);
+  z-index:99999;
+  pointer-events:none;
+  text-align:left;
+  line-height:1.5;
+}
+
+.perk-tooltip.hidden{
+  display:none;
+}
+
+.perk-tooltip-title{
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:8px;
+  color:#ffd66b;
+}
+
+.perk-tooltip-desc{
+  font-size:14px;
+  white-space:normal;
+  word-break:break-word;
+}
+
+</style>
+</head>
+<body>
+<div id="screenFlash" class="screen-flash"></div>
+
+<!-- 店内BGM -->
+<audio id="bgmSound" src="assets/sound/kankyo.mp3" loop></audio>
+
+<!-- スタート音 -->
+<audio id="startSound" src="assets/sound/start.mp3"></audio>
+
+<!-- ストップ音 -->
+<audio id="stopSound" src="assets/sound/stop.mp3"></audio>
+
+<!-- 確定音 -->
+<audio id="kakuteiSound" src="assets/sound/kakutei.mp3"></audio>
+
+<!-- 当たり音 -->
+<audio id="atariSound" src="assets/sound/atari.mp3"></audio>
+<audio id="doreyureSound" src="assets/sound/doreyure.mp3"></audio>
+<audio id="hakaiSound" src="assets/sound/hakai.mp3"></audio>
+
+<div id="app-stage">
+  <div id="game-root">
+
+    <div class="slot-ui">
+  <video
+    id="parkChanceVideo"
+    class="slot-chance-video"
+    muted
+    loop
+    playsinline
+    preload="auto"
+    style="display:none;"
+  >
+    <source src="assets/park_chance.mp4" type="video/mp4">
+  </video>
+
+  <img src="assets/DBD_SLOT_base.png" class="slot-base" alt="DBD slot base">
+
+  <img src="assets/ITA.png" class="slot-ita" id="slotIta" alt="ITA">
+
+ <!-- 上部表示 -->
+<div class="slot-overlay-header">
+  <div class="slot-lcd-ui">
+    <div class="slot-control-row">
+  <button class="mode-btn slot-lcd-btn" onclick="goToKillerPage()">キラー用</button>
+  <button class="mini-sound-btn slot-lcd-btn" type="button" onclick="togglePerkFilter()">パーク設定</button>
+  <button class="mini-sound-btn slot-lcd-btn" onclick="toggleBgm()" id="bgmBtn">🎵 BGM ON</button>
+  <button class="mini-sound-btn slot-lcd-btn" onclick="toggleSe()" id="seBtn">🔔 SE ON</button>
+  <button class="mini-sound-btn slot-lcd-btn" onclick="toggleAutoStop()" id="autoStopBtn">⏱ 自動停止 OFF</button>
+</div>
+
+    <div class="slot-volume-row">
+      <div class="volume-box">
+        <label for="bgmVolume">BGM</label>
+        <input type="range" id="bgmVolume" min="0" max="100" value="5" oninput="setBgmVolume(this.value)">
+        <span id="bgmVolumeText">5%</span>
+      </div>
+
+      <div class="volume-box">
+        <label for="seVolume">SE</label>
+        <input type="range" id="seVolume" min="0" max="100" value="12" oninput="setSeVolume(this.value)">
+        <span id="seVolumeText">12%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot-overlay-creator">
+    Created by
+    <a href="https://www.twitch.tv/papasan03" target="_blank">papasan03 (Twitch)</a>
+  </div>
+</div> 
+
+  <!-- リール1 -->
+  <div class="reel-window reel-pos1">
+    <div class="reel" id="frame1">
+      <div class="reel-track" id="reel1"></div>
+    </div>
+  </div>
+
+  <!-- リール2 -->
+  <div class="reel-window reel-pos2">
+    <div class="reel" id="frame2">
+      <div class="reel-track" id="reel2"></div>
+    </div>
+  </div>
+
+  <!-- リール3 -->
+  <div class="reel-window reel-pos3">
+    <div class="reel" id="frame3">
+      <div class="reel-track" id="reel3"></div>
+    </div>
+  </div>
+
+  <!-- リール4 -->
+<div class="reel-window reel-pos4 exhaustion-reel-wrap">
+  <div class="reel" id="frame4">
+    <div class="reel-track" id="reel4"></div>
+  </div>
+
+  <!-- 疲労系専用フレーム演出 -->
+  <div class="exhaustion-frame-overlay" id="exhaustionFrameOverlay">
+    <img src="assets/exhaustion_frame_left.png" class="exhaustion-arm left" alt="">
+    <img src="assets/exhaustion_frame_right.png" class="exhaustion-arm right" alt="">
+    <img src="assets/exhaustion_frame_overlay.png" class="exhaustion-core" alt="">
+  </div>
+</div>
+
+  <!-- スタートレバー -->
+  <button class="slot-start-lever slot-start-pos" onclick="startShuffle()" aria-label="スタート">
+    <img src="assets/start-lever.png" alt="start lever">
+  </button>
+
+  <!-- 停止ボタン -->
+  <div class="slot-stop-group-overlay">
+    <div class="stop-socket">
+      <button class="reel-stop-btn" id="stopBtn1" onclick="stopReel(0)" disabled aria-label="リール1停止">
+        <img src="assets/button.png" alt="stop">
+      </button>
+    </div>
+
+    <div class="stop-socket">
+      <button class="reel-stop-btn" id="stopBtn2" onclick="stopReel(1)" disabled aria-label="リール2停止">
+        <img src="assets/button.png" alt="stop">
+      </button>
+    </div>
+
+    <div class="stop-socket">
+      <button class="reel-stop-btn" id="stopBtn3" onclick="stopReel(2)" disabled aria-label="リール3停止">
+        <img src="assets/button.png" alt="stop">
+      </button>
+    </div>
+
+    <div class="stop-socket">
+      <button class="reel-stop-btn" id="stopBtn4" onclick="stopReel(3)" disabled aria-label="リール4停止">
+        <img src="assets/button.png" alt="stop">
+      </button>
+    </div>
+  </div>
+
+<div class="result-area">
+  <input id="resultText" type="text" readonly placeholder="ストップするとここに4つのパーク名が出ます">
+  <button class="control-btn" onclick="copyResult()">コピー</button>
+</div>
+
+<div id="perkFilterModal" class="modal-overlay hidden" onclick="closePerkFilterFromOverlay(event)">
+  <div class="perk-filter-modal" onclick="event.stopPropagation()">
+    <div class="perk-filter-header">
+      <div class="perk-filter-title">使用するパーク設定</div>
+      <div class="perk-filter-actions">
+        <button class="mini-sound-btn small-btn" type="button" onclick="selectAllPerks()">全選択</button>
+        <button class="mini-sound-btn small-btn" type="button" onclick="clearAllPerks()">全解除</button>
+        <button class="mini-sound-btn small-btn" type="button" onclick="togglePerkFilter()">閉じる</button>
+      </div>
+    </div>
+
+    <div class="perk-filter-body">
+  <div class="perk-filter-section">
+    <div class="perk-filter-section-title">1〜3リール用パーク</div>
+    <div id="perkCheckboxList" class="perk-checkbox-list"></div>
+  </div>
+
+  <div class="perk-filter-section">
+    <div class="perk-filter-section-title">第4リール用 疲労系パーク</div>
+    <div id="exhaustionPerkCheckboxList" class="perk-checkbox-list"></div>
+  </div>
+</div>
+  </div>
+</div>
+
+    </div> <!-- .slot-ui -->
+  </div>   <!-- #game-root -->
+</div>     <!-- #app-stage -->
+
+<script>     const bgmSound   = document.getElementById('bgmSound');
+     const startSound = document.getElementById('startSound');
+     const stopSound  = document.getElementById('stopSound');
+     const kakuteiSound = document.getElementById('kakuteiSound');
+     const atariSound   = document.getElementById('atariSound');
+     const uraAtariSound = new Audio("assets/sound/atari1.mp3");
+     const uraHazureSound = new Audio("assets/sound/hazure1.mp3");
+     const doreyureSound = document.getElementById('doreyureSound');
+     const hakaiSound = document.getElementById('hakaiSound');
+     const parkChanceVideo = document.getElementById('parkChanceVideo');
+     const slotIta = document.getElementById('slotIta'); 
+
+const SE_BASE_VOLUME = {
+  start: 0.20,
+  stop: 0.20,
+  kakutei: 0.40,
+  atari: 0.40,
+  uraAtari: 0.20,
+  uraHazure: 0.50,
+  gekiatu: 0.05,
+  doreyure: 0.60,
+  hakai: 0.20
+}; 
+
+    // 任意のサバイバーパークの例（もっと増やしてOK）
+    const allParks = [     
+{
+    name: "絆",
+    description: "20・28・36メートル以内にいる仲間のオーラを可視化する。",
+    icon: "Perks/iconPerks_Bond.png"
+  },
+  {
+    name: "有能の証明",
+    description: "4メートル以内で発電機を修理している生存者は、修理速度が6・8・10%上昇する。範囲内の生存者全員にも同じ上昇が適用される。「有能の証明」の効果は1度につき1つのみ適用される。",
+    icon: "Perks/iconPerks_ProveThyself.png"
+  },
+  {
+    name: "リーダー",
+    description: "8メートル以内にいる他の生存者の治療・破壊工作・フックからの救助・浄化・ゲートの開放・チェスト開錠の速度が15・20・25%上昇する。生存者には、「リーダー」の効果は1度につき1つのみ適用される。他の生存者が「リーダー」の効果範囲外に出た場合でも、効果は15秒間持続する。",
+    icon: "Perks/iconPerks_Leader.png"
+  },
+
+  {
+    name: "素早く静かに",
+    description: "乗り越えや隠れるアクションで発生する音の探知範囲と、音が聞こえる範囲が100%減少する。この効果は30・25・20秒間のクールタイムがある。",
+    icon: "Perks/iconPerks_QuickAndQuiet.png"
+  },
+
+  {
+    name: "全力疾走",
+    description: "走り始めたとき、通常の150%の速度で最大3秒間全力で走る。60・50・40秒間の疲労を発生させる。全力疾走は疲労の間は発動できない。走行中は疲労のステータス効果から回復しない。",
+    icon: "Perks/iconPerks_SprintBurst.png"
+  },
+
+  {
+    name: "アドレナリン",
+    description: "脱出ゲートが通電すると即座に1段階健康状態が回復し、5秒間移動速度が150%に上昇する。発動時に行動不能だった場合、効果は行動可能になったときに発動する。発動後、60・50・40秒間の疲労を発生させる。",
+    icon: "Perks/iconPerks_Adrenaline.png"
+  },
+
+  {
+    name: "共感",
+    description: "64・96・128メートル以内にいる負傷または瀕死状態の仲間のオーラを可視化する。ただし、殺人鬼に直接触れられている仲間のオーラは視えない。",
+    icon: "Perks/iconPerks_Empathy.png"
+  },
+
+  {
+    name: "植物学の知識",
+    description: "治療速度と治療アイテムの効率が11・22・33%上昇する。",
+    icon: "Perks/iconPerks_BotanyKnowledge.png"
+  },
+
+  {
+    name: "セルフケア",
+    description: "回復アイテムを使わずに、通常の35・40・45%の速度で自己治療ができるようになる。",
+    icon: "Perks/iconPerks_SelfCare.png"
+  },
+
+  {
+    name: "鋼の意思",
+    description: "痛みによるうめき声が25・50・75%減少する。",
+    icon: "Perks/iconPerks_IronWill.png"
+  },
+
+  {
+    name: "魂の平穏",
+    description: "カラスやその他の環境音を発生させる行動を行っても、カラスが飛び立たなくなる。また、狂気・中毒・負傷時の叫び声を抑えることができる。",
+    icon: "Perks/iconPerks_CalmSpirit.png"
+  },
+
+  {
+    name: "サボタージュ",
+    description: "工具箱を使わずにフックを破壊できるようになる。破壊には2.5秒かかり、破壊工作には90秒のクールダウンがある。生存者が運ばれている場合、担がれた場所から半径56メートル以内にあるフックのオーラが視える。",
+    icon: "Perks/iconPerks_Saboteur.png"
+  },
+
+  {
+    name: "スマートな着地",
+    description: "高所から落ちた後のよろめく時間が75%減少し、うめき声の大きさが100%低下する。さらに、通常の150%の速さで最大3秒間走ることができる。60・50・40秒間の疲労を発生させる。",
+    icon: "Perks/iconPerks_BalancedLanding.png"
+  },
+
+  {
+    name: "都会の逃走術",
+    description: "しゃがみ状態の移動速度が90・95・100%上昇する。",
+    icon: "Perks/iconPerks_UrbanEvasion.png"
+  },
+
+  {
+    name: "都会の生存術",
+    description: "自分と8メートル以内にいる仲間のアイテムチャージの消費速度が15・20・25%低下する。範囲外に出た場合、効果は15秒間持続する。",
+    icon: "Perks/iconPerks_Streetwise.png"
+  },
+
+  {
+    name: "手札公開",
+    description: "オーラ可視能力の有効距離が4・6・8メートル上昇する。この効果は他の効果と重複しない。",
+    icon: "Perks/DLC3/iconPerks_OpenHanded.png"
+  },
+
+  {
+    name: "賭け金のレイズ",
+    description: "自分以外の生存者が生存している場合、生存者全員の運が1・2・3%上昇する。",
+    icon: "Perks/DLC3/iconPerks_UpTheAnte.png"
+  },
+
+  {
+    name: "最後の切り札",
+    description: "チェストからアイテムを取得したとき、100%の確率でアンコモン以上のアドオンが1つ装着される。さらに、10・25・50%の確率で2つ目のアドオンも装着される。",
+    icon: "Perks/DLC3/iconPerks_AceInTheHole.png"
+  },
+
+  {
+    name: "テクニシャン",
+    description: "修理時に発生する物音と、それが聞こえる範囲が8メートル減少する。スキルチェックに失敗しても、発電機の爆発が起きず、進行度の減少も通常の1・2・3%分少なくなる。",
+    icon: "Perks/DLC4/iconPerks_Technician.png"
+  },
+
+  {
+    name: "しなやか",
+    description: "素早い乗り越えを行うと、通常の150%の速さで最大3秒間走ることができる。60・50・40秒間の疲労を発生させる。",
+    icon: "Perks/DLC4/iconPerks_Lithe.png"
+  },
+
+{
+    name: "警戒",
+    description: "殺人鬼が破壊アクションを行ったとき、その殺人鬼のオーラが6秒間視えるようになる。",
+    icon: "Perks/DLC4/iconPerks_Alert.png"
+  },
+
+  {
+    name: "唯一の生存者",
+    description: "儀式で最後の生存者となった場合、24メートル以内にあるハッチのオーラが視えるようになる。",
+    icon: "Perks/DLC2/iconPerks_SoleSurvivor.png"
+  },
+
+  {
+    name: "執念の対象",
+    description: "あなたがオブセッション状態のとき、殺人鬼の脅威範囲外にいる間、赤い傷マークが常に視えるようになる。",
+    icon: "Perks/DLC2/iconPerks_ObjectOfObsession.png"
+  },
+
+  {
+    name: "決死の一撃",
+    description: "フックから救助されるか自力で脱出した後、40秒間、決死の一撃が発動可能になる。殺人鬼に担がれている間にスキルチェックが発生し、成功すると殺人鬼を5秒間怯ませて逃れることができる。ただし、成功・失敗に関わらず、その後はオブセッション状態となる。",
+    icon: "Perks/DLC2/iconPerks_DecisiveStrike.png"
+  },
+
+  {
+    name: "ずっと一緒だ",
+    description: "瀕死状態の生存者を治療する時の治療速度が100%上昇する。治療が完了すると、回復させた生存者が我慢のステータス効果を(6・8・10)秒間得る。この効果には30秒間のクールダウンがある。",
+    icon: "Perks/DLC5/iconPerks_WereGonnaLiveForever.png"
+  },
+
+  {
+    name: "デッド・ハード",
+    description: "負傷時、走っている間にアビリティ発動ボタンを押すと、前方に素早くダッシュし、攻撃を一度だけ無効化できる。発動後、60秒間の疲労を発生させる。",
+    icon: "Perks/DLC5/iconPerks_DeadHard.png"
+  },
+
+  {
+    name: "弱音はナシだ",
+    description: "儀式の間、常に衰弱のステータス効果を受ける。血痕が残らず、負傷によるうめき声が75%減少し、自己治癒速度が25%上昇する。また、瀕死状態から完全に回復する能力を得る。",
+    icon: "Perks/DLC5/iconPerks_NoMither.png"
+  },
+
+  {
+    name: "目を覚ませ！",
+    description: "脱出ゲートが通電すると、脱出ゲートのオーラが視えるようになり、ゲート開放速度が5%上昇する。さらに、ゲート開放中、他の生存者はあなたのオーラを視ることができる。",
+    icon: "Perks/England/iconPerks_WakeUp.png"
+  },
+
+  {
+    name: "調剤学",
+    description: "チェストを開ける速度が80%上昇し、チェストを開けると必ず医療キットを見つけることができる。",
+    icon: "Perks/England/iconPerks_Pharmacy.png"
+  },
+
+  {
+    name: "寝ずの番",
+    description: "8メートル以内にいる他の生存者の治療、破壊工作、フックからの救助、浄化、ゲートの開放、チェスト開錠の速度が15%上昇する。範囲外に出た場合でも、効果は15秒間持続する。",
+    icon: "Perks/England/iconPerks_Vigil.png"
+  },
+
+  {
+    name: "執念",
+    description: "瀕死状態での這いずり移動速度が30%上昇し、自己治癒が可能になる。さらに、瀕死時のうめき声が75%減少する。",
+    icon: "Perks/Finland/iconPerks_Tenacity.png"
+  },
+
+  {
+    name: "刑事の直感",
+    description: "発電機の修理が完了すると、32メートル以内の発電機、チェスト、トーテムのオーラが10秒間視えるようになる。",
+    icon: "Perks/Finland/iconPerks_DetectivesHunch.png"
+  },
+
+  {
+    name: "張り込み",
+    description: "殺人鬼の脅威範囲内で追跡されていない間、15秒ごとにトークンを1つ獲得する（最大2トークン）。トークンがある状態でスキルチェックのグッドを出すと、自動的にグレイトに変換され、トークンを1つ消費する。",
+    icon: "Perks/Finland/iconPerks_StakeOut.png"
+  },
+
+  {
+    name: "ダンス・ウィズ・ミー",
+    description: "素早い乗り越えやロッカーからの飛び出しを行った後、3秒間赤い傷マークを残さなくなる。この効果は40秒間のクールダウンがある。",
+    icon: "Perks/Kate/iconPerks_DanceWithMe.png"
+  },
+
+  {
+    name: "ウィンドウズ・オブ・オポチュニティ",
+    description: "24メートル以内のパレット、破壊可能な壁、乗り越え可能な窓のオーラが視えるようになる。",
+    icon: "Perks/Kate/iconPerks_WindowsOfOpportunity.png"
+  },
+
+  {
+    name: "ボイルオーバー",
+    description: "殺人鬼に担がれている間のもがき効果が75%上昇し、殺人鬼のフックのオーラ探知能力を妨害する。さらに、殺人鬼が高所から落下した際、もがきゲージが33%進行する。",
+    icon: "Perks/Kate/iconPerks_BoilOver.png"
+  },
+
+{
+    name: "陽動",
+    description: "殺人鬼の脅威範囲内で45秒間動かずにいると発動可能。発動後、20メートル以内の任意の場所に小石を投げ、殺人鬼に通知を送ることができる。",
+    icon: "Perks/Haiti/iconPerks_Diversion.png"
+  },
+
+  {
+    name: "解放",
+    description: "他の生存者を安全にフックから救助した後、自力でフックから脱出する試みが100%成功する。ただし、脱出後は60秒間衰弱のステータス効果を受ける。",
+    icon: "Perks/Haiti/iconPerks_Deliverance.png"
+  },
+
+  {
+    name: "独学者",
+    description: "他の生存者を治療する際、スキルチェックの成功でトークンを獲得する。トークンが増えるごとに治療速度が上昇するが、最初のスキルチェック失敗時には治療進行度が減少する。",
+    icon: "Perks/Haiti/iconPerks_Autodidact.png"
+  },
+
+  {
+    name: "置き去りにされた者",
+    description: "儀式で最後の生存者となった場合、32メートル以内にあるハッチのオーラが視えるようになる。",
+    icon: "Perks/L4D/iconPerks_LeftBehind.png"
+  },
+
+  {
+    name: "与えられた猶予",
+    description: "フックから救助した生存者は、10秒間の迅速と我慢のステータス効果を追加で得る。",
+    icon: "Perks/L4D/iconPerks_BorrowedTime.png"
+  },
+
+  {
+    name: "不滅",
+    description: "1マッチに1回のみ、殺人鬼によって瀕死状態にされたとき、完全回復することができる。瀕死時の回復速度が(25・30・35)%上昇する。",
+    icon: "Perks/L4D/iconPerks_Unbreakable.png"
+  },
+
+  {
+    name: "ブレイクダウン",
+    description: "フックから脱出するか救助されると、そのフックが180秒間使用不能になり、殺人鬼のオーラが6秒間視えるようになる。",
+    icon: "Perks/Kenya/iconPerks_Breakdown.png"
+  },
+
+  {
+    name: "アフターケア",
+    description: "他の生存者を治療するか、または治療してもらうと、その生存者との相互リンクが形成され、お互いのオーラが視えるようになる。最大4人までリンク可能。",
+    icon: "Perks/Kenya/iconPerks_Aftercare.png"
+  },
+
+  {
+    name: "ディストーション",
+    description: "儀式開始時に3トークンを持つ。殺人鬼が自分のオーラを視ようとするたびにトークンを1つ消費し、10秒間自分のオーラと赤い傷マークを隠す。",
+    icon: "Perks/Kenya/iconPerks_Distortion.png"
+  },
+
+  {
+    name: "連帯感",
+    description: "他の生存者を治療すると、その治療進行度の50%分、自分も同時に回復する。",
+    icon: "Perks/Mali/iconPerks_Solidarity.png"
+  },
+
+  {
+    name: "平常心",
+    description: "いずれかの発電機が修理完了すると、10秒間赤い傷マークが残らなくなる。",
+    icon: "Perks/Mali/iconPerks_Poised.png"
+  },
+
+  {
+    name: "真っ向勝負",
+    description: "ロッカーに3秒間隠れると発動可能。ロッカーから飛び出す際、前方にいる殺人鬼を3秒間怯ませる。発動後、40秒間の疲労を発生させる。",
+    icon: "Perks/Mali/iconPerks_HeadOn.png"
+  },
+
+  {
+    name: "ベビーシッター",
+    description: "生存者をフックから救助すると、その生存者は30秒間赤い傷マークと血痕が残らなくなり、10%の迅速ステータス効果を得る。また、殺人鬼のオーラが8秒間視えるようになる。",
+    icon: "Perks/Qatar/iconPerks_babySitter.png"
+  },
+
+  {
+    name: "仲間意識",
+    description: "自分がフックに吊るされて耐久段階に入った際、他の生存者が16メートル以内にいると、フックの耐久ゲージの減少が最大34秒間停止する。",
+    icon: "Perks/Qatar/iconPerks_Camaraderie.png"
+  },
+
+  {
+    name: "セカンドウインド",
+    description: "他の生存者を負傷1回分に相当する量だけ治療すると発動可能。次に自分がフックから救助されるか自力で脱出した際、20秒後に自動的に無傷状態に回復する。",
+    icon: "Perks/Qatar/iconPerks_secondWind.png"
+  },
+
+  {
+    name: "一緒にいよう",
+    description: "8メートル以内にいる他の生存者の治療、破壊工作、フックからの救助、浄化、ゲートの開放、チェスト開錠の速度が15%上昇する。範囲外に出た場合でも、効果は15秒間持続する。",
+    icon: "Perks/Qatar/iconPerks_betterTogether.png"
+  },
+
+{
+    name: "執着心",
+    description: "負傷していないとき、移動速度が2%上昇し、赤い傷マークを常に視ることができる。",
+    icon: "Perks/Qatar/iconPerks_Fixated.png"
+  },
+
+  {
+    name: "内なる力",
+    description: "トーテムを1つ浄化すると発動可能。ロッカー内で10秒間隠れると、負傷から完全に回復する。",
+    icon: "Perks/Qatar/iconPerks_innerStrength.png"
+  },
+
+  {
+    name: "フリップ・フロップ",
+    description: "瀕死状態での回復進行度の50%が、担がれた際のもがき進行度に変換される。",
+    icon: "Perks/Ash/iconPerks_FlipFlop.png"
+  },
+
+  {
+    name: "ベルトを締めろ！",
+    description: "担がれている間のもがき効果が75%上昇し、殺人鬼のフックのオーラ探知能力を妨害する。さらに、殺人鬼が高所から落下した際、もがきゲージが33%進行する。",
+    icon: "Perks/Ash/iconPerks_BuckleUp.png"
+  },
+
+  {
+    name: "英雄の奮起",
+    description: "味方の代わりに2回攻撃を受けると発動可能。負傷時に通常攻撃を受けてもダウンせず、代わりに深手状態となる。",
+    icon: "Perks/Ash/iconPerks_MettleOfMan.png"
+  },
+
+  {
+    name: "怪我の功名",
+    description: "負傷すると発動。合計40秒間、赤い傷マークと血痕を残さなくなる。他者の治療を行うと、持続時間が延長される。",
+    icon: "Perks/Sweden/iconPerks_LuckyBreak.png"
+  },
+
+  {
+    name: "強硬手段",
+    description: "倒されたパレットのオーラが視える。倒れたパレットの横でアビリティ発動ボタンを長押しすると、パレットを元の位置に戻すことができる。",
+    icon: "Perks/Sweden/iconPerks_AnyMeansNecessary.png"
+  },
+
+  {
+    name: "突破",
+    description: "運ばれている生存者の5メートル以内にいると、迅速のステータス効果を得て移動速度が上昇し、運ばれている生存者のもがき速度が25%上昇する。",
+    icon: "Perks/Sweden/iconPerks_Breakout.png"
+  },
+
+  {
+    name: "オフレコ",
+    description: "フックから救助された後、80秒間、殺人鬼のオーラ探知能力を妨害し、負傷時のうめき声が100%減少する。",
+    icon: "Perks/Ukraine/iconPerks_OffTheRecord.png"
+  },
+
+  {
+    name: "おとり",
+    description: "発電機を3秒以上修理すると発動可能。発電機から離れた後、アビリティ発動ボタンを押すと、その発電機のオーラが殺人鬼に通知される。",
+    icon: "Perks/Ukraine/iconPerks_RedHerring.png"
+  },
+
+  {
+    name: "人々のために",
+    description: "健康状態のとき、他の生存者を即座に1段階回復させることができるが、自分は衰弱のステータス効果を80秒間受ける。",
+    icon: "Perks/Ukraine/iconPerks_ForThePeople.png"
+  },
+
+  {
+    name: "ソウルガード",
+    description: "瀕死状態から回復する際、20秒間我慢のステータス効果を得る。呪いのトーテムが存在する場合、瀕死状態から無制限に自己回復が可能になる。",
+    icon: "Perks/Wales/iconPerks_SoulGuard.png"
+  },
+
+  {
+    name: "血の協定",
+    description: "オブセッション状態の生存者とお互いのオーラが視える。どちらかが負傷すると、二人とも移動速度が7%上昇する。この効果は二人が16メートル以上離れると終了する。",
+    icon: "Perks/Wales/iconPerks_BloodPact.png"
+  },
+
+  {
+    name: "抑圧の同盟",
+    description: "発電機の修理中にアビリティ発動ボタンを押すと、進行中の発電機と他の3台の発電機が30秒間ブロックされる。",
+    icon: "Perks/Wales/iconPerks_RepressedAlliance.png"
+  },
+
+  {
+    name: "透視家",
+    description: "発電機の修理中にアビリティ発動ボタンを押すと、8秒間、殺人鬼のオーラが視えるようになる。",
+    icon: "Perks/Yemen/iconPerks_Visionary.png"
+  },
+
+  {
+    name: "苦肉の策",
+    description: "負傷しているかフックに吊るされている、または瀕死の生存者1人につき、治療とフック救助アクションの速度が(16・18・20)%上昇する。",
+    icon: "Perks/Yemen/iconPerks_DesperateMeasures.png"
+  },
+
+  {
+    name: "耐久設計",
+    description: "チャージ量を使い果たしたアイテムを持った状態で(14・13・12)秒間ロッカーの中に隠れると、そのアイテムのチャージ量が99%回復する。耐久設計を使用するたびに回復するチャージ量が33%減少する。",
+    icon: "Perks/Yemen/iconPerks_BuiltToLast.png"
+  },
+
+  {
+    name: "査定",
+    description: "儀式開始時に3トークンを持つ。トークンを1つ消費するごとに、チェストを追加で1回調査できる。",
+    icon: "Perks/Aurora/iconPerks_Appraisal.png"
+  },
+
+  {
+    name: "欺き",
+    description: "ロッカーの前で走りながらインタラクトボタンを押すと、ロッカーに入るふりをして赤い傷マークを3秒間残さなくなる。",
+    icon: "Perks/Aurora/iconPerks_Deception.png"
+  },
+
+{
+    name: "勢力争い",
+    description: "殺人鬼に運ばれている間、もがきの進行度が15%に達すると、近くのパレットを倒して殺人鬼を怯ませることができる。",
+    icon: "Perks/Aurora/iconPerks_PowerStruggle.png"
+  },
+
+  {
+    name: "出世街道",
+    description: "他の生存者がフックに吊るされると、トークンを(1・2・3)個得る（9個まで）。発電機を修理中に通常のスキルチェックでグレイトを出すと、すべてのトークンを消費して、トークン1個につき失われない進行度を2チャージ得る。",
+    icon: "Perks/Comet/iconPerks_FastTrack.png"
+  },
+
+  {
+    name: "大ヒット",
+    description: "パレットで殺人鬼を怯ませた後、通常の150%の速度で4秒間全力疾走する。発動後、20秒間の疲労を発生させる。",
+    icon: "Perks/Comet/iconPerks_SmashHit.png"
+  },
+
+  {
+    name: "自己防衛",
+    description: "他の生存者がフックに吊るされるたびに「忍び」を20/25/30秒間得る。",
+    icon: "Perks/Comet/iconPerks_Self-Preservation.png"
+  },
+
+  {
+    name: "忍苦の時",
+    description: "負傷中、治療中、または治療を受けている間、うめき声が100%減少し、治療音が完全に聞こえなくなる。",
+    icon: "Perks/Eclipse/iconPerks_BiteTheBullet.png"
+  },
+
+  {
+    name: "スタングレネード",
+    description: "いずれかの発電機を50%修理完了すると発動可能。何も持っていない状態でロッカーに入り、アビリティ発動ボタンを押すと閃光手榴弾を作成できる。",
+    icon: "Perks/Eclipse/iconPerks_Flashbang.png"
+  },
+
+  {
+    name: "新人魂",
+    description: "発電機の修理中にスキルチェックでグッドまたはグレイトを3回出すと発動。修理の進行が後退している発電機のオーラが視えるようになる。",
+    icon: "Perks/Eclipse/iconPerks_RookieSpirit.png"
+  },
+
+  {
+    name: "カウンターフォース",
+    description: "トーテムの浄化速度が20%上昇する。トーテムを浄化するたびに、次に浄化するトーテムのオーラが4秒間視えるようになり、浄化速度が追加で20%上昇する。",
+    icon: "Perks/Eclipse/iconPerks_Counterforce.png"
+  },
+
+  {
+    name: "起死回生",
+    description: "フックから救助されるか自力で脱出すると、治療の進行度が即座に70%追加される。",
+    icon: "Perks/Eclipse/iconPerks_Resurgence.png"
+  },
+
+  {
+    name: "地雷爆破",
+    description: "発電機の修理進行度が合計で66%に達すると発動可能。発電機を3秒以上修理した後、アビリティ発動ボタンを押して罠を設置する。殺人鬼がその発電機を破壊すると罠が爆発し、殺人鬼を怯ませる。",
+    icon: "Perks/Eclipse/iconPerks_BlastMine.png"
+  },
+
+  {
+    name: "千里眼",
+    description: "何も持っていない状態でアビリティ発動ボタンを押すと、8秒間、64メートル以内の発電機、フック、チェスト、ハッチ、脱出ゲートのオーラが視えるようになる。",
+    icon: "Perks/Hubble/iconPerks_Clairvoyance.png"
+  },
+
+  {
+    name: "恵み：癒しの輪",
+    description: "無力なトーテムまたは呪いのトーテムを清めて恵みのトーテムを作成できる。範囲内の生存者は治療速度が100%上昇し、自己治療が可能になる。",
+    icon: "Perks/Hubble/iconPerks_BoonCircleOfHealing.png"
+  },
+
+  {
+    name: "恵み：シャドウステップ",
+    description: "無力なトーテムまたは呪いのトーテムを清めて恵みのトーテムを作成できる。範囲内の生存者は赤い傷マークが残らず、殺人鬼のオーラ探知能力を無効化する。",
+    icon: "Perks/Hubble/iconPerks_BoonShadowStep.png"
+  },
+
+  {
+    name: "是正措置",
+    description: "発電機の修理中にグレイトスキルチェックを出すとトークンを獲得する。味方がスキルチェックに失敗すると、トークンを消費して失敗をグッドに変換する。",
+    icon: "Perks/Ion/T_iconPerks_CorrectiveAction.png"
+  },
+
+  {
+    name: "恵み：指数関数",
+    description: "無力なトーテムまたは呪いのトーテムを清めて恵みのトーテムを作成できる。範囲内の生存者は瀕死状態から自己回復が可能になり、回復速度が100%上昇する。",
+    icon: "Perks/Ion/T_iconPerks_BoonExponential.png"
+  },
+
+  {
+    name: "打開策",
+    description: "負傷したとき、移動速度が150%に上昇する効果の持続時間が2秒延長される。",
+    icon: "Perks/Ion/T_iconPerks_Overcome.png"
+  },
+
+  {
+    name: "父の助言",
+    description: "発電機の修理中、スキルチェックの発生率が高まり、スキルチェックの成功範囲が広がる。",
+    icon: "Perks/Kepler/iconPerks_ParentalGuidance.png"
+  },
+
+  {
+    name: "共感的つながり",
+    description: "他の生存者を治療すると、その生存者とのオーラリンクが形成され、お互いのオーラが視えるようになる。",
+    icon: "Perks/Kepler/iconPerks_EmpathicConnection.png"
+  },
+
+  {
+    name: "恵み：霊界理論",
+    description: "無力なトーテムまたは呪いのトーテムを清めて恵みのトーテムを作成できる。範囲内の生存者は探知不可のステータス効果を得る。",
+    icon: "Perks/Kepler/iconPerks_DarkTheory.png"
+  },
+
+  {
+    name: "インナーフォーカス",
+    description: "32メートル以内で他の生存者が負傷すると、その生存者のオーラが視えるようになり、殺人鬼の位置を特定しやすくなる。",
+    icon: "Perks/Meteor/iconPerks_InnerFocus.png"
+  },
+
+  {
+    name: "残像の顕現",
+    description: "殺人鬼に目眩ましアクションに成功すると、(20・25・30)秒間目眩ましのステータス効果を付与するこのパークを装備していると1回の儀式につき開放済みのチェスト1個を漁ることが可能になり、通常の懐中電灯1つを確実に入手できる。",
+    icon: "Perks/Meteor/iconPerks_ResidualManifest.png"
+  },
+
+{
+    name: "過剰な熱意",
+    description: "トーテムを浄化すると発動。負傷するまで発電機の修理速度が4%上昇する。",
+    icon: "Perks/Meteor/iconPerks_Overzealous.png"
+  },
+
+  {
+    name: "盗聴",
+    description: "発電機の修理を合計33%完了すると発動可能。発電機を3秒以上修理した後、アビリティ発動ボタンを押すと盗聴器を設置できる。設置された発電機は全生存者に黄色のオーラで表示され、殺人鬼がその発電機の14メートル以内に入ると、殺人鬼のオーラが全生存者に視えるようになる。盗聴器は60秒間有効で、発電機が破壊されると解除される。",
+    icon: "Perks/Orion/iconPerks_Wiretap.png"
+  },
+
+  {
+    name: "反射回復",
+    description: "自分が負傷しているとき、32メートル以内で他の生存者が負傷すると、自分の治療進行度が残り進行度の50%分即座に増加する。",
+    icon: "Perks/Orion/iconPerks_ReactiveHealing.png"
+  },
+
+  {
+    name: "雲隠れ",
+    description: "他のすべての生存者がフックに吊るされるか、瀕死状態になったとき（70・80・90）秒間：あなたは痛みによるうめき声を出さない。あなたは血痕を残さない。あなたは傷マークを残さない。",
+    icon: "Perks/Orion/iconPerks_LowProfile.png"
+  },
+
+  {
+    name: "みなぎる活力",
+    description: "他の生存者を治療完了すると、その生存者の治療、チェスト開放、トーテム浄化・清めのアクション速度が16%上昇する。この効果はその生存者が負傷するまで持続する。",
+    icon: "Perks/Orion/iconPerks_BetterThanNew.png"
+  },
+
+  {
+    name: "安心感",
+    description: "フックに吊るされた生存者の16メートル以内でアビリティ発動ボタンを押すと、フックの耐久ゲージの減少を30秒間停止させる。この効果はフック1回につき1人1回のみ使用可能。",
+    icon: "Perks/Orion/iconPerks_Reassurance.png"
+  },
+
+  {
+    name: "全集中",
+    description: "発電機修理または治療中にグレイトスキルチェックを成功させるとトークンを獲得する。1トークンにつきスキルチェックの進行度ボーナスが1%増加し、最大6トークンまで蓄積可能。ただし、スキルチェックでグッドを出すか失敗する、またはアクションを中断するとトークンは失われる。",
+    icon: "Perks/Orion/iconPerks_Hyperfocus.png"
+  },
+
+  {
+    name: "位置エネルギー",
+    description: "発電機を8秒以上修理すると発動可能。アビリティ発動ボタンを押すと、修理進行度の1.5%を消費して1トークンを獲得する。最大20トークンまで蓄積可能。アビリティ発動ボタンを再度押すと、蓄積したトークンを即座に修理進行度に変換できる。",
+    icon: "Perks/Quantum/iconPerks_PotentialEnergy.png"
+  },
+
+  {
+    name: "霧の作法",
+    description: "発電機修理中にグレイトスキルチェックを成功させると、殺人鬼のオーラが6秒間視えるようになる。",
+    icon: "Perks/Quantum/iconPerks_Fogwise.png"
+  },
+
+  {
+    name: "加速の策略",
+    description: "殺人鬼に追跡されている間、他の生存者の発電機修理速度が5%上昇し、さらに他の生存者のオーラが視えるようになる。負傷すると効果は終了し、80秒間のクールダウンが発生する。",
+    icon: "Perks/Quantum/iconPerks_VittoriosGambit.png"
+  },
+
+  {
+    name: "逃亡の飛躍",
+    description: "追跡中に高速乗り越えを行うと発動。6秒以内に次の高速乗り越えの騒音通知と音が発生しなくなる。この効果は40秒間のクールダウンがある。",
+    icon: "Perks/Saturn/iconPerks_CutLoose.png"
+  },
+
+  {
+    name: "切磋琢磨",
+    description: "他の生存者と協力して発電機の修理を完了すると発動。自分とその生存者の修理速度が75秒間5%上昇する。",
+    icon: "Perks/Saturn/iconPerks_FriendlyCompetition.png"
+  },
+
+  {
+    name: "チームワーク：二人の力",
+    description: "他の生存者を治療完了すると発動。自分とその生存者の移動速度が5%上昇する。この効果は二人が12メートル以上離れると終了する。",
+    icon: "Perks/Saturn/iconPerks_TeamworkPowerOfTwo.png"
+  },
+
+  {
+    name: "陰の実力者",
+    description: "他の生存者が殺人鬼に担がれると発動。5秒間、迅速のステータス効果を得て移動速度が上昇する。",
+    icon: "Perks/Saturn/iconPerks_BackgroundPlayer.png"
+  },
+
+  {
+    name: "血の騒ぎ",
+    description: "フックから救助されると発動。60秒間、疲労のステータス効果を即座に回復できる。この効果は使用するか目立つ行動を行うと終了する。また、脱出ゲートが通電すると無効になる。",
+    icon: "Perks/Saturn/iconPerks_BloodRush.png"
+  },
+
+  {
+    name: "チームワーク：共同ステルス",
+    description: "他の生存者を治療完了すると発動。自分とその生存者が12メートル以内にいる間、赤い傷マークが残らなくなる。二人が12メートル以上離れると効果は終了する。",
+    icon: "Perks/Saturn/iconPerks_TeamworkCollectiveStealth.png"
+  },
+
+{
+    name: "修理担当者",
+    description: "追跡が始まってから8秒間、発電機の修理速度が15%上昇する。",
+    icon: "Perks/Umbra/IconPerks_troubleshooter.png"
+  },
+
+  {
+    name: "状況適応能力",
+    description: "深手状態の間、移動速度が3%上昇し、他の生存者の治療を完了すると、我慢のステータス効果を10秒間得る。",
+    icon: "Perks/Umbra/IconPerks_madeForThis.png"
+  },
+
+  {
+    name: "ゴミ漁りの名人",
+    description: "使用済みの工具箱を持っている状態で、発電機の修理中にスキルチェックでグレイトを4回成功させると、工具箱のチャージが回復する。",
+    icon: "Perks/Umbra/IconPerks_scavenger.png"
+  },
+
+  {
+    name: "劇作法",
+    description: "無傷の状態で走行中に発動可能。ランダムで以下の効果のいずれかを得る：負傷から即座に回復、短時間の迅速効果、疲労の即時回復、または短時間の行動速度低下。",
+    icon: "Perks/Venus/iconPerks_Dramaturgy.png"
+  },
+
+  {
+    name: "シーンの相手役",
+    description: "殺人鬼の脅威範囲内で殺人鬼を視認すると、自身が叫び声を上げ、殺人鬼のオーラが5秒間視えるようになる。発動後、60秒間のクールダウンがある。",
+    icon: "Perks/Venus/iconPerks_ScenePartner.png"
+  },
+
+  {
+    name: "予想外の展開",
+    description: "負傷時にしゃがんだ状態でアビリティ発動ボタンを押すと、音を立てずに瀕死状態になり、這いずりゲージが溜まると自動的に無傷状態に回復する。",
+    icon: "Perks/Venus/iconPerks_PlotTwist.png"
+  },
+
+  {
+    name: "化学的な罠",
+    description: "発電機の修理を合計で50%分完了させると発動可能。倒されたパレットの横でアビリティ発動ボタンを押して罠を設置できる。罠は60秒間有効で、殺人鬼がそのパレットを破壊すると、4秒間移動速度が50%低下する。",
+    icon: "Perks/Wormhole/iconPerks_ChemicalTrap.png"
+  },
+
+  {
+    name: "忍び足",
+    description: "無傷の状態で発動可能。走行中の足音がなくなる。高速アクションを行うと20秒間のクールダウンが発生する。",
+    icon: "Perks/Wormhole/iconPerks_LightFooted.png"
+  },
+
+  {
+    name: "幸運の星",
+    description: "ロッカーに隠れている間、負傷時のうめき声を出さなくなる。ロッカーを出た後、30秒間、最も近い発電機と他の生存者全員のオーラが視え、血痕を残さず、うめき声も出さなくなる。発動後、30秒間のクールダウンがある。",
+    icon: "Perks/Wormhole/iconPerks_LuckyStar.png"
+  },
+
+  {
+    name: "光の闘士",
+    description: "懐中電灯を照らしている間、移動速度が50%上昇する。殺人鬼を目眩ましすると、6秒間、殺人鬼の移動速度が20%低下する。発動後、60秒間のクールダウンがある。",
+    icon: "Perks/Zodiac/iconsPerks_ChampionOfLight.png"
+  },
+
+  {
+    name: "恵み：イルミネーション",
+    description: "無力なトーテムまたは呪いのトーテムを清めて恵みのトーテムを作成できる。範囲内の生存者はすべての発電機とチェストのオーラが視えるようになる。",
+    icon: "Perks/Zodiac/iconsPerks_Illumination.png"
+  },
+
+  {
+    name: "締め切り",
+    description: "負傷時、スキルチェックの発生率が上昇し、成功範囲が広がる。",
+    icon: "Perks/Zodiac/iconsPerks_Deadline.png"
+  },
+
+  {
+    name: "呼び出し：網を張る蜘蛛",
+    description: "地下室で60秒間の儀式を行うと発動可能。すべての発電機の修理進行度を10%減少させる。発動後、儀式終了まで衰弱のステータス効果を受ける。",
+    icon: "Perks/Applepie/iconsPerks_InvocationWeavingSpiders.png"
+  },
+
+  {
+    name: "影に潜む強み",
+    description: "地下にいる間、通常の70%の速度で自己治療が可能になる。地下で治療を完了すると、殺人鬼のオーラが10秒間視えるようになる。",
+    icon: "Perks/Applepie/iconsPerks_StrengthInShadows.png"
+  },
+
+{
+    name: "邪気",
+    description: "地下室のフックに吊るされた際、自力脱出が必ず成功し、脱出後10秒間殺人鬼のオーラが視える。",
+    icon: "Perks/Applepie/iconsPerks_Wicked.png"
+  },
+
+  {
+    name: "幻影",
+    description: "発電機、トーテム、チェスト、脱出ゲートの近くでアビリティ発動ボタンを押すと、自身の幻影を生成できる。幻影はその場で静止し、殺人鬼を欺くのに利用できる。",
+    icon: "Perks/Churros/iconPerks_MirroredIllusion.png"
+  },
+
+  {
+    name: "吟遊詩人の鼓舞",
+    description: "パフォーマンスを完了すると、60秒間、周囲の生存者のスキルチェックの進行度が上昇する。ただし、20分の1の確率で効果が発動せず、自身が叫ぶだけの場合がある。",
+    icon: "Perks/Churros/iconPerks_BardicInspiration.png"
+  },
+
+  {
+    name: "不動の視力",
+    description: "4秒間静止すると発動。動き始めるまで、24メートル以内の発電機、チェスト、殺人鬼のオーラが視える。",
+    icon: "Perks/Churros/iconPerks_StillSight.png"
+  },
+
+  {
+    name: "俊敏",
+    description: "無傷の状態で、高速乗り越えの速度が20%上昇する。高速乗り越え後、パークは30秒間のクールダウンに入る。",
+    icon: "Perks/Donut/iconPerks_Finesse.png"
+  },
+
+  {
+    name: "強靭",
+    description: "チェストを開錠するか、トーテムを浄化または清めると発動。儀式が終了するまで、自身が叫ぶ代わりに殺人鬼のオーラが5秒間視える。",
+    icon: "Perks/Donut/iconPerks_Hardened.png"
+  },
+
+  {
+    name: "スペシャリスト",
+    description: "チェストを開錠または漁るとトークンを1個得る（最大6個）。発電機のスキルチェックでグレイトを出すと、トークンを全て消費し、消費したトークン1個につき発電機の必要チャージ数を4減らす",
+    icon: "Perks/Donut/iconPerks_Specialist.png"
+  },
+
+  {
+    name: "ベルモンドの目",
+    description: "発電機の修理を完了すると、殺人鬼のオーラが3秒間視える。また、他の効果で殺人鬼のオーラが視える場合、その持続時間が2秒延長される。",
+    icon: "Perks/Eclair/iconPerks_EyesOfBelmont.png"
+  },
+
+  {
+    name: "歓喜",
+    description: "パレットで殺人鬼を怯ませると、持っているアイテムのレア度が1つ上がり、最大チャージが25%補充される。この効果は30秒間のクールダウンがある。",
+    icon: "Perks/Eclair/iconPerks_Exultation.png"
+  },
+
+  {
+    name: "栄光の瞬間",
+    description: "チェストを2回開錠または漁ると発動可能。負傷すると同時に衰弱のステータス効果を得るが、60秒後に自動的に健康状態が1段階回復する。瀕死状態になると効果はキャンセルされる。",
+    icon: "Perks/Eclair/iconPerks_MomentOfGlory.png"
+  },
+
+  {
+    name: "呼び出し：裏切り者のカラス",
+    description: "地下室で60秒間の儀式を行うと発動可能。以降、脅威範囲内で殺人鬼がカラスを飛ばすたびに、殺人鬼のオーラが全生存者に2秒間視えるようになる。発動後、儀式終了まで衰弱のステータス効果を受ける。",
+    icon: "Perks/Gelato/T_UI_iconsPerks_InvocationTreacherousCrows.png"
+  },
+
+  {
+    name: "決別",
+    description: "他の生存者の治療を完了した後、自身が治療を受けている最中にアビリティ発動ボタンを押すと、衰弱のステータス効果を得る。60秒後、自動的に健康状態が1段階回復する。瀕死状態になると効果は終了する。",
+    icon: "Perks/Gelato/T_UI_iconsPerks_CleanBreak.png"
+  },
+
+  {
+    name: "重責の引き受け",
+    description: "フックに吊るされた生存者の前でアビリティ発動ボタンを押すと、その生存者のフックカウントを1つ減らし、自身のフックカウントを1つ増やす。発動後、40秒間無防備のステータス効果を受ける。",
+    icon: "Perks/Gelato/T_UI_iconsPerks_ShoulderTheBurden.png"
+  },
+
+
+/*ここから追加*/
+  {
+    name: "害をなすなかれ",
+    description: "別の生存者を治療するとき、その生存者のフック段階1つにつき、治療速度が(30・40・50)%上昇し、スキルチェックでグレイトを出すと治療が3%進行する。",
+    icon: "Perks/Orela Rose/T_UI_iconsPerks_DoNoHarm.png"
+  },
+
+  {
+    name: "救助義務",
+    description: "無傷状態で味方の代わりに攻撃を受けると、12メートル以内にいる他の生存者全員が25%の迅速を(4・5・6)秒間得る。",
+    icon: "Perks/Orela Rose/T_UI_iconsPerks_DutyOfCare.png"
+  },
+
+  {
+    name: "迅速な対応",
+    description: "・ロッカーから駆け出すと、疲労のステータス効果に(30・25・20)秒間苦しむ。疲労の効果を得ると、殺人鬼のオーラが2秒間視える。疲労状態になると生存者は疲労を引き起こす他のパークが使用不可になる。",
+    icon: "Perks/Orela Rose/T_UI_iconsPerks_RapidResponse.png"
+  },
+
+  {
+    name: "終末世界の知恵",
+    description: "2個のチェストを開錠するか漁ったあとに、破壊されたパレットの隣でアビリティの発動ボタン1を4秒間押すと、もろいパレットを作る。（24・28・32）メートル以内にある破壊されたパレットのオーラが視える。もろいパレットは倒されると壊れる。",
+    icon: "Perks/Rick Grimes/T_UI_iconPerks_ApocalypticIngenuity.png"
+  },
+
+  {
+    name: "捕まえてみろ！",
+    description: "他の生存者をフックから救出したあと、しゃがんで静止している状態でアビリティの発動ボタン1を押すと、24メートル以内の負傷または瀕死状態の生存者が（10・12.5・15）秒間赤い傷マークと血痕を残さず、痛みによるうめき声を出さなくなる。あなたは叫び声を上げ、5秒間あなたのオーラが殺人鬼に視える。",
+    icon: "Perks/Rick Grimes/T_UI_iconPerks_ComeAndGetMe.png"
+  },
+
+  {
+    name: "チームワーク：強化",
+    description: "あなたが負傷中に別の生存者が24メートル以内で殺人鬼をバレットで怯ませるか、目眩ましすると、（20・25・30）秒間、あなたのうめき声、赤い傷マーク、血痕が100%減少する。",
+    icon: "Perks/Rick Grimes/T_UI_iconPerks_TeamworkToughenUp.png"
+  },
+
+  {
+    name: "信念",
+    description: "他の生存者1人を治療したあと、瀕死状態で25%以上回復したときにアビリティの発動ボタン2を押すと、即座に回復して立ち上がる。その際、衰弱を得て、（20・25・30）秒後に再び瀕死状態になる。",
+    icon: "Perks/Michonne Grimes/T_UI_iconPerks_Conviction.png"
+  },
+
+  {
+    name: "最後の抵抗",
+    description: "追跡されずに殺人鬼の脅威範囲内に（120・105・90）秒間いたあと、高速乗り越えを行うと、2.5メートル以内にいる殺人鬼を3秒間怯ませる。その後、このパークは儀式が終了するまで無効になる。",
+    icon: "Perks/Michonne Grimes/T_UI_iconPerks_LastStand.png"
+  },
+
+  {
+    name: "チームワーク：挑戦",
+    description: "殺人鬼をパレットで怯ませるか、目眩ましすると、24メートル以内の負傷した他の生存者が（6・8・10）秒間、我慢を得て殺人鬼のオーラを視ることができる。",
+    icon: "Perks/Michonne Grimes/T_UI_iconPerks_TeamworkThrowDown.png"
+  },
+
+  {
+    name: "路上生活",
+    description: "フックに吊るされた生存者の前でアビリティ発動ボタンを押すと、その生存者のフックカウントを1つ減らし、自身のフックカウントを1つ増やす。発動後、40秒間無防備のステータス効果を受ける。",
+    icon: "Perks/Vee Boonyasak/T_UI_iconPerks_RoadLife.png"
+  },
+
+  {
+    name: "ワンツースリーフォー！",
+    description: "フックに吊るされた生存者の前でアビリティ発動ボタンを押すと、その生存者のフックカウントを1つ減らし、自身のフックカウントを1つ増やす。発動後、40秒間無防備のステータス効果を受ける。",
+    icon: "Perks/Vee Boonyasak/T_UI_iconPerks_OneTwoThreeFour.png"
+  },
+
+  {
+    name: "ゴーストノート",
+    description: "フックに吊るされた生存者の前でアビリティ発動ボタンを押すと、その生存者のフックカウントを1つ減らし、自身のフックカウントを1つ増やす。発動後、40秒間無防備のステータス効果を受ける。",
+    icon: "Perks/Vee Boonyasak/T_UI_iconPerks_GhostNotes.png"
+  },
+
+  {
+    name: "ジャ・ジャ・ジャ・ジャーン",
+    description: "フックに吊るされた生存者の前でアビリティ発動ボタンを押すと、その生存者のフックカウントを1つ減らし、自身のフックカウントを1つ増やす。発動後、40秒間無防備のステータス効果を受ける。",
+    icon: "Perks/Dustin Henderson/T_UI_iconsPerks_BadaBadaBoom.png"
+  },
+
+  {
+    name: "作戦変更",
+    description: "フックに吊るされた生存者の前でアビリティ発動ボタンを押すと、その生存者のフックカウントを1つ減らし、自身のフックカウントを1つ増やす。発動後、40秒間無防備のステータス効果を受ける。",
+    icon: "Perks/Dustin Henderson/T_UI_iconsPerks_ChangeOfPlan.png"
+  },
+
+  {
+    name: "チームワーク：つながった回路",
+    description: "フックに吊るされた生存者の前でアビリティ発動ボタンを押すと、その生存者のフックカウントを1つ減らし、自身のフックカウントを1つ増やす。発動後、40秒間無防備のステータス効果を受ける。",
+    icon: "Perks/Dustin Henderson/T_UI_iconsPerks_TeamworkFullCircuit.png"
+  },
+
+  {
+    name: "ESP",
+    description: "4秒間しゃがむと、自分の近くから44メートル先まで徐々に生存者、殺人鬼、様々な物体のオーラが視えるようになる。自分が忍びと無感覚状態になる。しゃがむのを止めるか11秒間経過すると、このパークの全ての効果が終了し、（60・50・40）秒間のクールダウンに入る。",
+    icon: "Perks/Eleven/T_UI_iconsPerks_ExtrasensoryPerception (2).png"
+  },
+
+  {
+    name: "みんなに見える",
+    description: "殺人鬼があなたのオーラを表示させたとき、1個のトークンを得る。トークンが4個貯まると、それが全て消費され、自分と他の生存者全員に殺人鬼のオーラが（10・12.5・15）秒間表示される。このパークには10秒間のクールダウンがある。",
+    icon: "Perks/Eleven/T_UI_iconsPerks_WeSeeYou.png"
+  },
+
+  {
+    name: "チームワーク：小さな声",
+    description: "自分と一緒に発電機を修理している生存者1人につき、発電機の修理音が聞こえる範囲が（15・20・25）%縮小する。1人以上の他の生存者と一緒に修理をしている間、修理の速度が5%上昇する。",
+    icon: "Perks/Eleven/T_UI_iconsPerks_TeamworkSoftSpoken.png"
+  },
+
+  {
+    name: "フロー状態",
+    description: "発電機の修理が完了するたびに、トークンを1個得る（5個まで）。トークン1個につき：トーテムを浄化または清める速度が（8・9・10）%上昇する。治療する速度が（8・9・10）%上昇する。生存者をフックから救助する速度が（8・9・10）%上昇する。",
+    icon: "Perks/Kwon/iconPerks_Lithe.png"
+  },
+
+  {
+    name: "秘密の場所",
+    description: "他の生存者を治療中、自分とその生存者が「忍び」を得る。オブセッションの治療を完了したとき、自分とオブセッションが「忍び」を（20・25・30）秒間得る。儀式開始時、自分が「オブセッション」になる確率が低下する。",
+    icon: "Perks/Kwon/IconsPerks_aPlaceForUs.png"
+  },
+
+  {
+    name: "先読み",
+    description: "あなたが殺人鬼の脅威範囲内にいるか、殺人鬼に追跡されている間：最も近い5つのパレットと窓のオーラがあなたに視える。パレットを倒したあとに動き出すまでの時間が50%早くなる。パレットを倒すと、（40・35・30）秒のクールダウンが発生する。",
+    icon: "Perks/Kwon/IconsPerks_FiveMovesAhead.png"
+  },
+
+
+/*ここから一般*/
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Perks/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Perks/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Perks/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Perks/iconAction_carriedBody.png"
+  },
+
+  {
+    name: "パーク自由",
+    description: "大当たり！好きなパークを１つ選択。",
+    icon: "Perks/iconStatusEffects_exhausted.png"
+  },
+
+{
+    name: "きっとやり遂げる",
+    description: "生存者をフックから救出すると、(30・60・90)秒間、他者を治療する速度が100%上昇する。",
+    icon: "Perks/iconPerks_WellMakeIt.png"
+  },
+
+{
+    name: "コソ泥の本能",
+    description: "(16・24・32)メートル以内にある未開封のチェストのオーラと、マップ上のアイテムが視えるようになる。チェストからレア度の高いアイテムを発見する確率がかなり上昇する。",
+    icon: "Perks/iconPerks_PlunderersInstinct.png"
+  },
+
+{
+    name: "ツルツルとした肉体",
+    description: "フックから自力で抜け出すために、もがける回数が3回増加するフックから脱出できる確率が (2・3・4)％上昇する",
+    icon: "Perks/iconPerks_SlipperyMeat.png"
+  },
+
+{
+    name: "凍りつく背筋(猫)",
+    description: "殺人鬼が36メートル範囲内にいて、視野内ではっきりとこちらを見ていると通知される。修理・フック破壊・治療・フックからの救出・浄化・清め・脱出ゲート開放・開錠の速度がそれぞれ(2・4・6)%上昇する。凍りつく背筋は殺人鬼が視線をそらすか、範囲内から出た後も0.5秒間効果が持続する",
+    icon: "Perks/iconPerks_SpineChill.png"
+  },
+
+
+{
+    name: "予感",
+    description: "45度以内かつ36メートル以内にいる殺人鬼の方向を見ると、警告音が鳴る。発動するたびに(60・45・30)秒間のクールダウンがある。",
+    icon: "Perks/iconPerks_Premonition.png"
+  },
+
+{
+    name: "希望",
+    description: "脱出ゲートが通電すると(5・6・7)%の迅速ステータス効果を受ける。",
+    icon: "Perks/iconPerks_Hope.png"
+  },
+
+{
+    name: "痛みも気から",
+    description: "自分が負傷しているとき、修理と治療の「スキルチェック：グレイト」成功範囲が(10・20・30)％増加する。",
+    icon: "Perks/iconPerks_ThisIsNotHappening.png"
+  },
+
+{
+    name: "血族",
+    description: "あなたが吊るされている時、生存者のオーラが他の生存者全員から視えるようになる。殺人鬼が(8・12・16)メートル以内にいる時、あなたと他の生存者全員に殺人鬼のオーラが視えるようになる。自分以外の生存者がフックに吊るされている場合、あなたは他の生存者全員のオーラを視ることができる。殺人鬼がフックに吊るされた生存者から(8・12・16)メートル以内にいる場合、あなたは殺人鬼のオーラを視ることができる。",
+    icon: "Perks/iconPerks_Kindred.png"
+  },
+
+{
+    name: "誰も見捨てはしない",
+    description: "脱出ゲートが通電すると、あなたは次の効果を得る。他の生存者を治療したりフックから救出したりする速度が(50・75・100)%上昇する生存者をフックから救助したとき、その生存者が10%の迅速を15秒間得る他の生存者全員のオーラが視えるようになる",
+    icon: "Perks/iconPerks_NoOneLeftBehind.png"
+  },
+
+{
+    name: "身軽",
+    description: "赤い傷マークが消えずに残る時間が通常より(3・4・5)秒減少し、間隔が不定になる。",
+    icon: "Perks/iconPerks_Lightweight.png"
+  },
+
+{
+    name: "逆境魂",
+    description: "負傷状態のとき、修理・フック破壊・治療・フックからの救助・乗り越え・トーテムの浄化または清め・ゲートの開放・開錠の速度が(3・6・9)%上昇する。",
+    icon: "Perks/iconPerks_Resilience.png"
+  },
+
+{
+    name: "闇の感覚",
+    description: "45度以内かつ(8・10・12)メートル以内に位置するトーテムの方向を見ると、警告音が鳴る。小さな獲物は発動するたび(15・12・10)秒のクールダウンがある。無力なトーテムと呪いのトーテムが浄化されるたびにトークンを1つ獲得する。トークン1つにつき小さな獲物の探索範囲が5度減少する。",
+    icon: "Perks/iconPerks_DarkSense.png"
+  },
+
+{
+    name: "小さな獲物",
+    description: "脱出ゲートが通電すると(5・6・7)%の迅速ステータス効果を受ける。",
+    icon: "Perks/iconPerks_SmallGame.png"
+  },
+
+{
+    name: "デジャヴ",
+    description: "互いに近接している3台の発電機のオーラが視える。可視化された発電機の修理速度が(4・5・6)%上昇する。",
+    icon: "Perks/iconPerks_DejaVu.png"
+  },
+
+    ];
+
+const PUBLIC_MATCH_FIXED_REEL_INDEX = 3; // 0始まりなので4番目
+
+const EXHAUSTION_PERK_NAMES = [
+  "全力疾走",
+  "スマートな着地",
+  "しなやか",
+  "デッド・ハード",
+  "真っ向勝負",
+  "打開策",
+  "陰の実力者",
+  "劇作法",
+  "大ヒット",
+  "迅速な対応"
+];
+
+function isExhaustionPerk(park) {
+  return !!park && EXHAUSTION_PERK_NAMES.includes(String(park.name || "").trim());
+}
+
+function getFixedExhaustionParks() {
+  const result = allParks.filter(park =>
+    isExhaustionPerk(park) &&
+    enabledExhaustionPerkKeys.has(getPerkKey(park))
+  );
+
+  return result;
+}
+
+function getReels123Parks() {
+  return allParks.filter(park => {
+    if (!park) return false;
+
+    const name = String(park.name || "").trim();
+
+    // 疲労系は1〜3番から完全除外
+    if (isExhaustionPerk(park)) return false;
+
+    // 自由確定は通常抽選には入れない
+    if (name === "自由確定") return false;
+
+    return true;
+  });
+}
+
+let enabledPerkKeys = new Set();
+let enabledExhaustionPerkKeys = new Set();
+
+function getAllNormalPerks() {
+  return getReels123Parks().filter(park => {
+    const name = String(park.name || "").trim();
+    if (name === "パークなし") return false;
+    if (name === "パーク自由") return false;
+    return true;
+  });
+}
+
+function getAllExhaustionPerks() {
+  return allParks.filter(park => isExhaustionPerk(park));
+}
+
+function getPerkKey(park) {
+  return `${park.name}__${park.icon}`;
+}
+
+function loadEnabledPerks() {
+  const savedNormal = localStorage.getItem("dbd_enabled_survivor_perks");
+  const savedExhaustion = localStorage.getItem("dbd_enabled_exhaustion_perks");
+
+  if (savedNormal) {
+    try {
+      const parsed = JSON.parse(savedNormal);
+      enabledPerkKeys = new Set(parsed);
+    } catch (e) {
+      console.error("enabled normal perks load error:", e);
+      enabledPerkKeys = new Set(getAllNormalPerks().map(getPerkKey));
+    }
+  } else {
+    enabledPerkKeys = new Set(getAllNormalPerks().map(getPerkKey));
+  }
+
+  if (savedExhaustion) {
+    try {
+      const parsed = JSON.parse(savedExhaustion);
+      enabledExhaustionPerkKeys = new Set(parsed);
+    } catch (e) {
+      console.error("enabled exhaustion perks load error:", e);
+      enabledExhaustionPerkKeys = new Set(getAllExhaustionPerks().map(getPerkKey));
+    }
+  } else {
+    enabledExhaustionPerkKeys = new Set(getAllExhaustionPerks().map(getPerkKey));
+  }
+}
+
+function saveEnabledPerks() {
+  localStorage.setItem(
+    "dbd_enabled_survivor_perks",
+    JSON.stringify([...enabledPerkKeys])
+  );
+
+  localStorage.setItem(
+    "dbd_enabled_exhaustion_perks",
+    JSON.stringify([...enabledExhaustionPerkKeys])
+  );
+}
+
+const REVIVAL_PERKS = [
+  "セルフケア",
+  "決死の一撃",
+  "鋼の意思",
+  "苦肉の策"
+];
+
+const URA_ENTRY_RATE = 0.40; // パークなし出現時、0.40で裏抽選に突入
+const URA_HIT_RATE = 0.40; // 裏抽選に突入した後の当たり率0.40
+
+// =====================
+// 追加イベント抽選
+// =====================
+
+// イベント全体発生率 40%
+const FRAME_EVENT_TRIGGER_RATE = 0.50;
+
+// 演出1 / 演出2 の選択率
+const FRAME_EVENT1_RATE = 0.40; // 残りは演出2 = 0.60
+
+// 演出ごとの当たり率
+const FRAME_EVENT1_HIT_RATE = 0.25; // ハズレ15% 
+const FRAME_EVENT2_HIT_RATE = 0.15; // ハズレ5% 
+
+// 次回スタート時の自由確定演出率
+const NEXT_FREE_RATE_EVENT1 = 0.10;
+const NEXT_FREE_RATE_EVENT2 = 0.30;
+
+// 次回スタート用ブースト
+let pendingNextSpecialRate = null;   // null / 1/3 / 1/20
+let pendingNextSpecialSource = null; // "event1" / "event2" / null
+
+// 追加イベント処理中
+let isFrameEventProcessing = false;
+let frameEventSessionId = 0;
+
+let isUraProcessing = false;
+let uraSessionId = 0;
+let uraResolved = false;
+let uraTargetIndexes = [];
+let uraSpinPendingCount = 0;
+let keepDoorChanceVideoUntilNextStart = false;
+
+
+const FREE_PARK = {
+  name: "自由確定",
+  description: "好きなパークを自由に選べる当たり枠",
+  icon: "Perks/iconStatusEffects_luck.png"
+};
+
+function getNoPerkPark() {
+  return allParks.find(p => p.name === "パークなし") || {
+    name: "パークなし",
+    description: "ホッホッホ､はずれじゃよ。",
+    icon: "Perks/iconAction_carriedBody.png"
+  };
+}
+
+function getForcedSpecialParkForReel(index) {
+  // 特殊当たり時は4リール目も自由確定にする
+  return FREE_PARK;
+}
+
+const SPECIAL_PERK_NAMES = ["パークなし", "パーク自由","自由パーク", "自由確定"];
+
+const SPECIAL_HIT_RATE = 0.08;
+
+// 合計100%になるように補正
+const FREE_REEL_DISTRIBUTION = [
+  { count: 4, rate: 0.02 },
+  { count: 3, rate: 0.13 },
+  { count: 2, rate: 0.28 },
+  { count: 1, rate: 0.57 }
+];
+
+// ドア演出
+const DOOR_EVENT_TRIGGER_RATE = 0.50; // 0.40
+const DOOR_EVENT_HIT_RATE = 0.18;     // 0.08
+const DOOR_EVENT_WAIT_MS = 600;
+
+let isDoorChanceProcessing = false;
+
+
+let currentSpecialHit = false;
+let currentFreeReelIndexes = [];
+
+function triggerSpecialFlash(isRainbow = false) {
+  const flash = document.getElementById("screenFlash");
+  if (!flash) return;
+
+  flash.classList.toggle("rainbow-flash", !!isRainbow);
+
+  flash.classList.add("show");
+  setTimeout(() => flash.classList.remove("show"), 180);
+  setTimeout(() => flash.classList.add("show"), 260);
+  setTimeout(() => flash.classList.remove("show"), 420);
+
+  setTimeout(() => {
+    flash.classList.remove("rainbow-flash");
+  }, 500);
+}
+
+const ITEM_HEIGHT = 200;
+const VIEW_HEIGHT = 200;
+const CENTER_OFFSET = 0;
+const REEL_IDS = ["reel1", "reel2", "reel3", "reel4"];
+const FRAME_IDS = ["frame1", "frame2", "frame3", "frame4"];
+const STOP_BTN_IDS = ["stopBtn1", "stopBtn2", "stopBtn3", "stopBtn4"];
+const REEL_COPY_COUNT = 5;
+const REEL_MIDDLE_COPY = 2;
+
+let animationFrameId = null;
+let lastFrameTime = 0;
+let stoppedReelCount = 0;
+let bgmEnabled = true;
+let seEnabled = true;
+let autoStopEnabled = false;
+let isShuffling = false;
+let isStopping = false;
+let bgmVolume = 0.05;
+let seVolume = 0.12;
+
+let autoStopTimers = [];
+let autoStopSessionId = 0;
+
+
+const reelResults = [];
+const lockedPerkKeys = [];
+const reelStates = {
+  reel1: {
+    y: 0,
+    speed: 0,
+    phase: "idle", // idle / spinning / stopping / stopped
+    finalPark: null,
+    stopTargetY: null,
+    stopFromY: 0,
+    stopStartMs: null,
+    stopEndMs: null,
+    stopRequested: false
+  },
+  reel2: {
+    y: 0,
+    speed: 0,
+    phase: "idle",
+    finalPark: null,
+    stopTargetY: null,
+    stopFromY: 0,
+    stopStartMs: null,
+    stopEndMs: null,
+    stopRequested: false
+  },
+  reel3: {
+    y: 0,
+    speed: 0,
+    phase: "idle",
+    finalPark: null,
+    stopTargetY: null,
+    stopFromY: 0,
+    stopStartMs: null,
+    stopEndMs: null,
+    stopRequested: false
+  },
+  reel4: {
+    y: 0,
+    speed: 0,
+    phase: "idle",
+    finalPark: null,
+    stopTargetY: null,
+    stopFromY: 0,
+    stopStartMs: null,
+    stopEndMs: null,
+    stopRequested: false
+  }
+};
+
+function setStopButtonGlow(index, enabled) {
+  const sockets = document.querySelectorAll(".stop-socket");
+  const socket = sockets[index];
+  if (!socket) return;
+  socket.classList.toggle("active-glow", enabled);
+}
+
+function setAllStopButtonGlow(enabled) {
+  const sockets = document.querySelectorAll(".stop-socket");
+  sockets.forEach(socket => {
+    socket.classList.toggle("active-glow", enabled);
+  });
+}
+
+function playUraAtari() {
+  if (!seEnabled || !uraAtariSound) return;
+  uraAtariSound.pause();
+  uraAtariSound.currentTime = 0;
+  uraAtariSound.volume = SE_BASE_VOLUME.uraAtari * seVolume;
+  uraAtariSound.play().catch(() => {});
+}
+
+function playUraHazure() {
+  if (!seEnabled || !uraHazureSound) return;
+  uraHazureSound.pause();
+  uraHazureSound.currentTime = 0;
+  uraHazureSound.volume = SE_BASE_VOLUME.uraHazure * seVolume;
+  uraHazureSound.play().catch(() => {});
+}
+
+function playGekiatuSound() {
+  if (!seEnabled || !gekiatuSound) return;
+  gekiatuSound.pause();
+  gekiatuSound.currentTime = 0;
+  gekiatuSound.volume = SE_BASE_VOLUME.gekiatu * seVolume;
+  gekiatuSound.play().catch(() => {});
+}
+
+function playDoreyureSe() {
+  if (!seEnabled || !doreyureSound) return;
+  doreyureSound.pause();
+  doreyureSound.currentTime = 0;
+  doreyureSound.volume = SE_BASE_VOLUME.doreyure * seVolume;
+  doreyureSound.play().catch(() => {});
+}
+
+function playHakaiSe() {
+  if (!seEnabled || !hakaiSound) return;
+  hakaiSound.pause();
+  hakaiSound.currentTime = 0;
+  hakaiSound.volume = SE_BASE_VOLUME.hakai * seVolume;
+  hakaiSound.play().catch(() => {});
+}
+
+const gekiatuSound = new Audio("assets/sound/gekiatu.mp3");
+
+function startDoorChanceLoopVideo() {
+  if (!parkChanceVideo) return;
+
+  parkChanceVideo.loop = true;
+  parkChanceVideo.style.display = "block";
+  parkChanceVideo.currentTime = 0;
+  parkChanceVideo.play().catch(() => {});
+}
+
+function resetDoorChanceVisuals() {
+  keepDoorChanceVideoUntilNextStart = false;
+  isDoorChanceProcessing = false;
+
+  if (parkChanceVideo) {
+    parkChanceVideo.pause();
+    parkChanceVideo.currentTime = 0;
+    parkChanceVideo.style.display = "none";
+  }
+
+  if (slotIta) {
+    slotIta.classList.remove("shaking");
+    slotIta.style.display = "block";
+  }
+}
+
+async function runDoorChanceIfNeeded() {
+  if (isDoorChanceProcessing) {
+    finalizeResultDisplay();
+    return;
+  }
+
+  isDoorChanceProcessing = true;
+
+  try {
+    const shouldTrigger = Math.random() < DOOR_EVENT_TRIGGER_RATE;
+
+    if (!shouldTrigger) {
+      finalizeResultDisplay();
+      return;
+    }
+
+    setStatus("???");
+    playDoreyureSe();
+
+    for (let i = 0; i < 3; i++) {
+      if (slotIta) {
+        slotIta.classList.remove("shaking");
+        void slotIta.offsetWidth;
+        slotIta.classList.add("shaking");
+      }
+      await sleep(500);
+    }
+
+    const isHit = Math.random() < DOOR_EVENT_HIT_RATE;
+
+    if (!isHit) {
+      if (slotIta) {
+        slotIta.classList.remove("shaking");
+      }
+      finalizeResultDisplay();
+      return;
+    }
+
+    if (slotIta) {
+      slotIta.classList.remove("shaking");
+      slotIta.style.display = "none";
+    }
+
+    playHakaiSe();
+    playGekiatuSound();
+    triggerSpecialFlash(true);
+    startDoorChanceLoopVideo();
+
+    keepDoorChanceVideoUntilNextStart = true;
+    setStatus("PARK CHANCE!!");
+
+    await sleep(DOOR_EVENT_WAIT_MS);
+    await runDoorFreedomSequence();
+  } catch (e) {
+    console.error("runDoorChanceIfNeeded error:", e);
+    finalizeResultDisplay(false);
+  } finally {
+    isDoorChanceProcessing = false;
+
+    const startLever = document.querySelector(".slot-start-lever");
+    if (startLever && !isShuffling && !isUraProcessing && !isFrameEventProcessing) {
+      startLever.disabled = false;
+    }
+  }
+}
+
+function showPerkTooltip(park, mouseX, mouseY) {
+  const tooltip = document.getElementById("perkTooltip");
+  const title = document.getElementById("perkTooltipTitle");
+  const desc = document.getElementById("perkTooltipDesc");
+
+  if (!tooltip || !title || !desc || !park) return;
+
+  title.textContent = park.name || "";
+  desc.textContent = park.description || "説明なし";
+
+  tooltip.classList.remove("hidden");
+
+  const offset = 18;
+  const tooltipRect = tooltip.getBoundingClientRect();
+
+  let left = mouseX + offset;
+  let top = mouseY + offset;
+
+  if (left + tooltipRect.width > window.innerWidth - 12) {
+    left = mouseX - tooltipRect.width - offset;
+  }
+
+  if (top + tooltipRect.height > window.innerHeight - 12) {
+    top = window.innerHeight - tooltipRect.height - 12;
+  }
+
+  if (left < 12) left = 12;
+  if (top < 12) top = 12;
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+function hidePerkTooltip() {
+  const tooltip = document.getElementById("perkTooltip");
+  if (!tooltip) return;
+  tooltip.classList.add("hidden");
+}
+
+function attachPerkTooltipEvents(element, park) {
+  if (!element || !park) return;
+
+  element.onmouseenter = (e) => {
+    showPerkTooltip(park, e.clientX, e.clientY);
+  };
+
+  element.onmousemove = (e) => {
+    showPerkTooltip(park, e.clientX, e.clientY);
+  };
+
+  element.onmouseleave = () => {
+    hidePerkTooltip();
+  };
+}
+
+function clearPerkTooltipEvents() {
+  for (let i = 0; i < REEL_IDS.length; i++) {
+    const frame = document.getElementById(FRAME_IDS[i]);
+    if (!frame) continue;
+
+    frame.onmouseenter = null;
+    frame.onmousemove = null;
+    frame.onmouseleave = null;
+  }
+
+  hidePerkTooltip();
+}
+
+function makeFallbackIcon(label) {
+  const safeLabel = String(label || "NO ICON").replace(/[<>&"]/g, "");
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="12" fill="#2b2b2b"/>
+      <rect x="4" y="4" width="88" height="88" rx="10" fill="none" stroke="#888" stroke-width="2"/>
+      <text x="48" y="42" text-anchor="middle" font-size="12" fill="#ddd" font-family="sans-serif">NO IMAGE</text>
+      <text x="48" y="62" text-anchor="middle" font-size="10" fill="#9be3ff" font-family="sans-serif">
+        ${safeLabel.slice(0, 10)}
+      </text>
+    </svg>
+  `;
+  return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+}
+
+function buildReel(reelId) {
+  const reel = document.getElementById(reelId);
+  if (!reel) return;
+
+  reel.innerHTML = "";
+
+  const reelIndex = REEL_IDS.indexOf(reelId);
+  const reelParks = getReelParkList(reelIndex);
+  const extended = [];
+
+  for (let i = 0; i < REEL_COPY_COUNT; i++) {
+    extended.push(...reelParks);
+  }
+
+  extended.forEach(park => {
+    const item = document.createElement("div");
+    item.className = "reel-item";
+
+    const img = document.createElement("img");
+    img.src = park.icon;
+    img.alt = park.name;
+    img.onerror = function () {
+      this.onerror = null;
+      this.src = makeFallbackIcon(park.name);
+    };
+
+    const name = document.createElement("div");
+    name.className = "reel-item-name";
+    name.textContent = park.name;
+
+    item.appendChild(img);
+    item.appendChild(name);
+    reel.appendChild(item);
+  });
+
+  const state = reelStates[reelId];
+  const reelLength = reelParks.length;
+  const listHeight = reelLength * ITEM_HEIGHT;
+
+  if (typeof state.y !== "number" || !isFinite(state.y)) {
+    state.y = -(reelLength * ITEM_HEIGHT * REEL_MIDDLE_COPY);
+  }
+
+  const minY = -(listHeight * (REEL_COPY_COUNT - 1));
+  const maxY = -listHeight;
+
+  while (state.y >= maxY) state.y -= listHeight;
+  while (state.y < minY) state.y += listHeight;
+
+  reel.style.transition = "none";
+  reel.style.transform = `translateY(${state.y}px)`;
+}
+
+function getReelParkList(reelIdOrIndex) {
+  const reelIndex =
+    typeof reelIdOrIndex === "number"
+      ? reelIdOrIndex
+      : REEL_IDS.indexOf(reelIdOrIndex);
+
+  // 4番目リールは疲労系専用
+  if (reelIndex === PUBLIC_MATCH_FIXED_REEL_INDEX) {
+    const exhaustion = getFixedExhaustionParks();
+    const noPerk = allParks.find(p => p.name === "パークなし");
+
+    return noPerk ? [...exhaustion, noPerk] : exhaustion;
+  }
+
+  // 1〜3番目リールは疲労系を完全除外
+  const reels123 = getReels123Parks();
+
+  const enabledNormal = reels123.filter(park => {
+    const name = String(park.name || "").trim();
+
+    if (name === "パークなし") return false;
+    if (name === "パーク自由") return false;
+    if (name === "自由確定") return false;
+
+    return enabledPerkKeys.has(getPerkKey(park));
+  });
+
+  const noPerks = reels123.filter(park => park.name === "パークなし");
+  const freeParks = reels123.filter(park => park.name === "パーク自由");
+
+  // 全解除時でも パークなし / パーク自由 は残す
+  return [...enabledNormal, ...noPerks, ...freeParks];
+}
+
+
+function resetReelStates() {
+  clearAutoStopTimers();
+  uraSpinPendingCount = 0;
+
+  REEL_IDS.forEach((reelId, index) => {
+    const state = reelStates[reelId];
+
+    if (state._uraAnimId) {
+      cancelAnimationFrame(state._uraAnimId);
+      state._uraAnimId = null;
+    }
+
+    // y は維持する。未定義の初回だけ中央へ
+    if (typeof state.y !== "number" || !isFinite(state.y)) {
+      const reelLength = getReelParkList(reelId).length;
+      state.y = -(reelLength * ITEM_HEIGHT * REEL_MIDDLE_COPY);
+    }
+
+    state.speed = 1800 + index * 120;
+    state.phase = "idle";
+    state.finalPark = null;
+    state.stopTargetY = null;
+    state.stopFromY = state.y;
+    state.stopStartMs = null;
+    state.stopEndMs = null;
+    state.stopRequested = false;
+    state._lastTempSpinTime = 0;
+
+    const frame = document.getElementById(FRAME_IDS[index]);
+    const reel = document.getElementById(reelId);
+    const stopBtn = document.getElementById(STOP_BTN_IDS[index]);
+
+    frame?.classList.remove(
+  "stopping",
+  "special-hit",
+  "ready-stop",
+  "rainbow-hit",
+  "flash-hold",
+  "flash",
+  "exhaustion-locked"
+);
+
+    if (reel) reel.style.transition = "none";
+    if (stopBtn) stopBtn.disabled = true;
+
+    applyReelTransform(reelId);
+  });
+
+  reelResults.length = 0;
+  lockedPerkKeys.length = 0;
+  stoppedReelCount = 0;
+  lastFrameTime = 0;
+
+  currentSpecialHit = false;
+  currentFreeReelIndexes = [];
+  setStartLeverGlow(false);
+
+  isUraProcessing = false;
+  uraResolved = false;
+  uraTargetIndexes = [];
+  uraSessionId++;
+
+  clearFrameEventClasses();
+  isFrameEventProcessing = false;
+  frameEventSessionId++;
+
+  const startLever = document.querySelector(".slot-start-lever");
+  if (startLever) startLever.disabled = false;
+
+  setAllStopButtonGlow(false);
+}
+
+function applyReelTransform(reelId) {
+  const reel = document.getElementById(reelId);
+  if (!reel) return;
+  reel.style.transform = `translateY(${reelStates[reelId].y}px)`;
+}
+
+function getParkIndex(park) {
+  return allParks.findIndex(p => p.name === park.name && p.icon === park.icon);
+}
+
+function wrapReelY(reelId) {
+  const state = reelStates[reelId];
+  const reelParks = getReelParkList(reelId);
+  const listHeight = reelParks.length * ITEM_HEIGHT;
+
+  const minY = -(listHeight * (REEL_COPY_COUNT - 1));
+  const maxY = -listHeight;
+
+  while (state.y >= maxY) {
+    state.y -= listHeight;
+  }
+  while (state.y < minY) {
+    state.y += listHeight;
+  }
+}
+
+function normalizeReelTop(y, reelId) {
+  const reelParks = getReelParkList(reelId);
+  const listHeight = reelParks.length * ITEM_HEIGHT;
+  return ((-y % listHeight) + listHeight) % listHeight;
+}
+
+function getDisplayedParkFromY(y, reelId) {
+  const reelParks = getReelParkList(reelId);
+  const listHeight = reelParks.length * ITEM_HEIGHT;
+  const normalizedTop = ((-y % listHeight) + listHeight) % listHeight;
+
+  const centeredIndex = Math.round((normalizedTop + CENTER_OFFSET) / ITEM_HEIGHT) % reelParks.length;
+  return reelParks[centeredIndex];
+}
+
+function computeStopYForFixedDuration(currentY, parkIndex, reelId, minSteps = 1) {
+  const reelParks = getReelParkList(reelId);
+  const listHeight = reelParks.length * ITEM_HEIGHT;
+
+  const normalizedTop = ((-currentY % listHeight) + listHeight) % listHeight;
+  const targetTop = parkIndex * ITEM_HEIGHT - CENTER_OFFSET;
+
+  let delta = targetTop - normalizedTop;
+
+  while (delta <= 0) delta += listHeight;
+  while (delta < minSteps * ITEM_HEIGHT) delta += listHeight;
+
+  let targetY = currentY - delta;
+
+  const minY = -(listHeight * (REEL_COPY_COUNT - 1));
+  const maxY = -listHeight;
+
+  while (targetY >= maxY) targetY -= listHeight;
+  while (targetY < minY) targetY += listHeight;
+
+  return targetY;
+}
+
+function getMostVisibleIndexFromCurrentY(y, reelId) {
+  const reelParks = getReelParkList(reelId);
+  const listHeight = reelParks.length * ITEM_HEIGHT;
+  const normalizedTop = ((-y % listHeight) + listHeight) % listHeight;
+
+  let bestIndex = 0;
+  let bestVisible = -1;
+
+  for (let i = 0; i < reelParks.length; i++) {
+    const itemTop = i * ITEM_HEIGHT;
+    const itemBottom = itemTop + ITEM_HEIGHT;
+
+    let visible = 0;
+
+    const viewTop = normalizedTop;
+    const viewBottom = normalizedTop + VIEW_HEIGHT;
+
+    if (viewBottom <= listHeight) {
+      const overlapTop = Math.max(viewTop, itemTop);
+      const overlapBottom = Math.min(viewBottom, itemBottom);
+      visible = Math.max(0, overlapBottom - overlapTop);
+    } else {
+      const firstViewTop = viewTop;
+      const firstViewBottom = listHeight;
+      const secondViewTop = 0;
+      const secondViewBottom = viewBottom - listHeight;
+
+      const overlap1Top = Math.max(firstViewTop, itemTop);
+      const overlap1Bottom = Math.min(firstViewBottom, itemBottom);
+      const part1 = Math.max(0, overlap1Bottom - overlap1Top);
+
+      const overlap2Top = Math.max(secondViewTop, itemTop);
+      const overlap2Bottom = Math.min(secondViewBottom, itemBottom);
+      const part2 = Math.max(0, overlap2Bottom - overlap2Top);
+
+      visible = part1 + part2;
+    }
+
+    if (visible > bestVisible) {
+      bestVisible = visible;
+      bestIndex = i;
+    }
+  }
+
+  return bestIndex;
+}
+
+function finishReelStop(reelId) {
+  const index = REEL_IDS.indexOf(reelId);
+  const state = reelStates[reelId];
+  const frame = document.getElementById(FRAME_IDS[index]);
+
+  state.phase = "stopped";
+  frame?.classList.remove("stopping", "ready-stop", "special-hit", "rainbow-hit");
+
+  if (isRainbowPerk(state.finalPark)) {
+    frame?.classList.add("rainbow-hit");
+  } else if (isSpecialPerk(state.finalPark)) {
+    frame?.classList.add("special-hit");
+  } else {
+    frame?.classList.add("ready-stop");
+  }
+
+  reelResults[index] = state.finalPark;
+
+  if (state.finalPark && !isSpecialPerk(state.finalPark) && !isRainbowPerk(state.finalPark)) {
+    const key = getPerkKey(state.finalPark);
+    if (!lockedPerkKeys.includes(key)) {
+      lockedPerkKeys.push(key);
+    }
+  }
+
+  stoppedReelCount++;
+
+  const allStopped = REEL_IDS.every(id => reelStates[id].phase === "stopped");
+
+  if (allStopped) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    runUraLotteryIfNeeded();
+  }
+}
+
+function forceReelDisplay(index, park, locked = true) {
+  const reelId = REEL_IDS[index];
+  const frameId = FRAME_IDS[index];
+  const reel = document.getElementById(reelId);
+  const frame = document.getElementById(frameId);
+
+  if (!reel || !frame || !park) return;
+
+  reel.innerHTML = `
+    <div class="reel-item">
+      <img src="${park.icon}" alt="${park.name}" onerror="this.onerror=null;this.src='${makeFallbackIcon(park.name)}'">
+      <div class="reel-item-name">${park.name}</div>
+    </div>
+  `;
+
+  reel.style.transform = "translateY(0px)";
+
+  frame.classList.remove(
+    "stopping",
+    "ready-stop",
+    "special-hit",
+    "rainbow-hit",
+    "flash",
+    "flash-hold",
+    "frame-run",
+    "frame-lit",
+    "frame-hit",
+    "frame-flash-all",
+    "frame-win-hold"
+  );
+
+  if (!locked) return;
+
+  if (isRainbowPerk(park)) {
+    frame.classList.add("rainbow-hit");
+  } else if (isSpecialPerk(park)) {
+    frame.classList.add("special-hit");
+  } else {
+    frame.classList.add("ready-stop");
+  }
+
+  attachPerkTooltipEvents(frame, park);
+}
+
+function isSpecialPerk(park) {
+  if (!park) return false;
+  const name = String(park.name || "").trim();
+  return SPECIAL_PERK_NAMES.includes(name);
+}
+
+function isRainbowPerk(park) {
+  if (!park) return false;
+  return String(park.name || "").trim() === "自由確定";
+}
+
+function isLockedPark(park) {
+  if (!park) return false;
+  if (isSpecialPerk(park)) return false;
+  return lockedPerkKeys.includes(getPerkKey(park));
+}
+
+function getAllowedStopIndexFromCurrentY(y, reelId) {
+  const reelParks = getReelParkList(reelId);
+  const startIndex = getMostVisibleIndexFromCurrentY(y, reelId);
+
+  // 4番目リールは疲労系固定枠なので、そのまま止める
+  if (REEL_IDS.indexOf(reelId) === PUBLIC_MATCH_FIXED_REEL_INDEX) {
+    return startIndex;
+  }
+
+  for (let step = 0; step < reelParks.length; step++) {
+    const idx = (startIndex + step) % reelParks.length;
+    const park = reelParks[idx];
+
+    if (!isLockedPark(park)) {
+      return idx;
+    }
+  }
+
+  return startIndex;
+}
+
+/**
+ * 現在位置から「前に進む方向」へ最短でスナップする
+ * 余計に1周させない
+ */
+function getSnapTargetY(currentY, parkIndex, reelId) {
+  const reelParks = getReelParkList(reelId);
+  const listHeight = reelParks.length * ITEM_HEIGHT;
+  const normalizedTop = normalizeReelTop(currentY, reelId);
+  const targetTop = parkIndex * ITEM_HEIGHT - CENTER_OFFSET;
+
+  let deltaTop = targetTop - normalizedTop;
+
+  while (deltaTop <= -listHeight / 2) deltaTop += listHeight;
+  while (deltaTop > listHeight / 2) deltaTop -= listHeight;
+
+  return currentY - deltaTop;
+}
+
+function recenterReelForUra(reelId) {
+  const state = reelStates[reelId];
+  const reelParks = getReelParkList(reelId);
+  const listHeight = reelParks.length * ITEM_HEIGHT;
+
+  const normalizedTop = normalizeReelTop(state.y, reelId);
+  state.y = -(listHeight * 1) - normalizedTop;
+
+  applyReelTransform(reelId);
+}
+
+function getUraStopTargetY(targetIndex, reelId) {
+  const reelParks = getReelParkList(reelId);
+  const listHeight = reelParks.length * ITEM_HEIGHT;
+  const targetTop = targetIndex * ITEM_HEIGHT - CENTER_OFFSET;
+
+  return -(listHeight * 3) - targetTop;
+}
+
+function stopReel(index) {
+  if (!isShuffling || isUraProcessing) return;
+  if (isFreeReel(index)) return;
+
+  const reelId = REEL_IDS[index];
+  const state = reelStates[reelId];
+  const frame = document.getElementById(FRAME_IDS[index]);
+  const stopBtn = document.getElementById(STOP_BTN_IDS[index]);
+
+  if (!state || state.phase !== "spinning") return;
+
+  state.stopRequested = true;
+  state.phase = "stopping";
+  state.stopFromY = state.y;
+
+  const reelParks = getReelParkList(reelId);
+  const stopIndex = getAllowedStopIndexFromCurrentY(state.y, reelId);
+  const stopPark = reelParks[stopIndex];
+  state.finalPark = stopPark;
+
+  state.stopTargetY = getSnapTargetY(state.y, stopIndex, reelId);
+
+  const distance = Math.abs(state.stopTargetY - state.y);
+  const duration = Math.max(80, Math.min(180, distance * 0.35));
+
+  state.stopStartMs = performance.now();
+  state.stopEndMs = state.stopStartMs + duration;
+
+  frame?.classList.add("stopping");
+  if (stopBtn) stopBtn.disabled = true;
+
+  setStopButtonGlow(index, false);
+  playStopSe();
+}
+
+function playKakuteiSe() {
+  if (!seEnabled || !kakuteiSound) return;
+  kakuteiSound.pause();
+  kakuteiSound.currentTime = 0;
+  kakuteiSound.volume = SE_BASE_VOLUME.kakutei * seVolume;
+  kakuteiSound.play().catch(() => {});
+}
+
+function playAtariSe() {
+  if (!seEnabled || !atariSound) return;
+  atariSound.pause();
+  atariSound.currentTime = 0;
+  atariSound.volume = SE_BASE_VOLUME.atari * seVolume;
+  atariSound.play().catch(() => {});
+}
+
+function isFreeReel(index) {
+  return currentSpecialHit && currentFreeReelIndexes.includes(index);
+}
+
+function pickSpecialHit() {
+  return Math.random() < SPECIAL_HIT_RATE;
+}
+
+function pickFreeReelCount() {
+  const r = Math.random();
+  let acc = 0;
+
+  for (const item of FREE_REEL_DISTRIBUTION) {
+    acc += item.rate;
+    if (r < acc) return item.count;
+  }
+
+  return 1;
+}
+
+function shuffleArray(arr) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function pickFreeReelIndexes() {
+  const freeCount = pickFreeReelCount();
+  const indexes = shuffleArray([0, 1, 2, 3]).slice(0, freeCount);
+  return indexes.sort((a, b) => a - b);
+}
+
+function setStartLeverGlow(enabled, isRainbow = false) {
+  const lever = document.querySelector(".slot-start-lever");
+  if (!lever) return;
+
+  lever.classList.remove("atari-glow", "rainbow-glow");
+
+  if (enabled) {
+    lever.classList.add(isRainbow ? "rainbow-glow" : "atari-glow");
+  }
+}
+
+function stopFreeReelInstant(index) {
+  const reelId = REEL_IDS[index];
+  const state = reelStates[reelId];
+  const frame = document.getElementById(FRAME_IDS[index]);
+  const stopBtn = document.getElementById(STOP_BTN_IDS[index]);
+
+  if (!state) return;
+
+  const forcedPark = getForcedSpecialParkForReel(index);
+  const reelParks = getReelParkList(reelId);
+
+  let targetIndex = reelParks.findIndex(
+    p => p.name === forcedPark.name && p.icon === forcedPark.icon
+  );
+
+  state.phase = "stopped";
+  state.stopRequested = true;
+  state.finalPark = forcedPark;
+
+  // そのリール配列内に自由確定が無い場合でも、強制表示で確実に出す
+  if (targetIndex < 0) {
+    reelResults[index] = forcedPark;
+    forceReelDisplay(index, forcedPark, true);
+
+    if (stopBtn) stopBtn.disabled = true;
+    setStopButtonGlow(index, false);
+    return;
+  }
+
+  state.stopTargetY = getSnapTargetY(state.y, targetIndex, reelId);
+  state.y = state.stopTargetY;
+
+  applyReelTransform(reelId);
+
+  frame?.classList.remove("ready-stop", "stopping", "special-hit", "rainbow-hit");
+
+  if (isRainbowPerk(forcedPark)) {
+    frame?.classList.add("rainbow-hit");
+  } else if (isSpecialPerk(forcedPark)) {
+    frame?.classList.add("special-hit");
+  } else {
+    frame?.classList.add("ready-stop");
+  }
+
+  if (stopBtn) stopBtn.disabled = true;
+  setStopButtonGlow(index, false);
+
+  reelResults[index] = forcedPark;
+}
+
+function reelLoop(timestamp) {
+  if (!isShuffling) return;
+
+  if (!lastFrameTime) lastFrameTime = timestamp;
+  const dt = Math.min((timestamp - lastFrameTime) / 1000, 0.05);
+  lastFrameTime = timestamp;
+
+  REEL_IDS.forEach(reelId => {
+    const state = reelStates[reelId];
+    if (!state) return;
+
+    if (state.phase === "spinning") {
+      state.y += state.speed * dt;
+      wrapReelY(reelId);
+      applyReelTransform(reelId);
+      return;
+    }
+
+    if (state.phase === "stopping") {
+      const total = state.stopEndMs - state.stopStartMs;
+      const elapsed = Math.min(timestamp - state.stopStartMs, total);
+      const t = Math.max(0, Math.min(elapsed / total, 1));
+
+      // 少しだけスロットっぽく減速
+      const eased = 1 - Math.pow(1 - t, 2.2);
+
+      state.y = state.stopFromY + (state.stopTargetY - state.stopFromY) * eased;
+      applyReelTransform(reelId);
+
+      if (t >= 1) {
+        state.y = state.stopTargetY;
+        applyReelTransform(reelId);
+        finishReelStop(reelId);
+      }
+    }
+  });
+
+  if (isShuffling) {
+    animationFrameId = requestAnimationFrame(reelLoop);
+  }
+}
+
+function startShuffle() {
+  if (isShuffling || isUraProcessing || isDoorChanceProcessing) return;
+
+  clearPerkTooltipEvents();
+
+  if (keepDoorChanceVideoUntilNextStart) {
+    resetDoorChanceVisuals();
+  }
+
+  resetReelStates();
+  REEL_IDS.forEach(reelId => buildReel(reelId));
+
+  FRAME_IDS.forEach(id => {
+    const frame = document.getElementById(id);
+    frame?.classList.remove(
+      "special-hit",
+      "rainbow-hit",
+      "ready-stop",
+      "stopping",
+      "flash-hold",
+      "flash",
+      "frame-run",
+      "frame-lit",
+      "frame-hit",
+      "frame-flash-all",
+      "frame-win-hold"
+    );
+  });
+
+  isShuffling = true;
+
+  const startLever = document.querySelector(".slot-start-lever");
+  if (startLever) startLever.disabled = true;
+
+  currentSpecialHit = pickCurrentStartSpecialHit();
+  currentFreeReelIndexes = currentSpecialHit ? pickFreeReelIndexes() : [];
+
+  setStatus(
+    currentSpecialHit
+      ? `当たり演出発動！ 自由パーク ${currentFreeReelIndexes.length} 枠`
+      : "各ストップボタンで停止してください"
+  );
+
+  playStartSe();
+  setAllStopButtonGlow(true);
+
+  if (currentSpecialHit) {
+    const hasRainbow = currentFreeReelIndexes.length > 0;
+    setStartLeverGlow(true, hasRainbow);
+    playAtariSe();
+    triggerSpecialFlash(hasRainbow);
+  }
+
+  REEL_IDS.forEach((reelId, i) => {
+    const state = reelStates[reelId];
+    const stopBtn = document.getElementById(STOP_BTN_IDS[i]);
+    const frame = document.getElementById(FRAME_IDS[i]);
+
+    if (isFreeReel(i)) {
+      state.phase = "spinning";
+      state.speed = 1700 + Math.random() * 200;
+
+      setTimeout(() => {
+        stopFreeReelInstant(i);
+      }, 600 + Math.random() * 300);
+
+      return;
+    }
+
+    state.phase = "spinning";
+    state.speed = 1700 + (i * 120) + Math.random() * 120;
+
+    if (stopBtn) stopBtn.disabled = false;
+    frame?.classList.add("ready-stop");
+  });
+
+  const resultInput = document.getElementById("resultText");
+  if (resultInput) resultInput.value = "";
+
+  if (currentSpecialHit && currentFreeReelIndexes.length === 4) {
+  REEL_IDS.forEach((_, i) => {
+    const stopBtn = document.getElementById(STOP_BTN_IDS[i]);
+    if (stopBtn) stopBtn.disabled = true;
+  });
+
+  setAllStopButtonGlow(false);
+
+  for (let i = 0; i < REEL_IDS.length; i++) {
+    stopFreeReelInstant(i);
+
+    const frame = document.getElementById(FRAME_IDS[i]);
+    const forcedPark = getForcedSpecialParkForReel(i);
+
+    frame?.classList.remove("special-hit", "rainbow-hit", "ready-stop", "stopping");
+
+    if (isRainbowPerk(forcedPark)) {
+      frame?.classList.add("rainbow-hit");
+    } else if (isSpecialPerk(forcedPark)) {
+      frame?.classList.add("special-hit");
+    } else {
+      frame?.classList.add("ready-stop");
+    }
+  }
+
+  cancelAnimationFrame(animationFrameId);
+  animationFrameId = null;
+
+  playStopSe();
+  playKakuteiSe();
+  triggerSpecialFlash(true);
+  showResult();
+  isShuffling = false;
+  setStatus("当たり！ 1〜3リール自由確定 / 4リールはパークなし");
+  setStartLeverGlow(false);
+
+  if (startLever) startLever.disabled = false;
+  return;
+}
+
+    animationFrameId = requestAnimationFrame(reelLoop);
+
+  if (autoStopEnabled) {
+    scheduleAutoStopSequence();
+  }
+}
+
+async function runDoorFreedomSequence() {
+  if (isUraProcessing) return;
+
+  clearAutoStopTimers();
+
+  isShuffling = true;
+  isStopping = false;
+  isDoorChanceProcessing = false;
+
+  currentSpecialHit = true;
+  currentFreeReelIndexes = [0, 1, 2, 3];
+
+  reelResults.length = 0;
+  lockedPerkKeys.length = 0;
+  stoppedReelCount = 0;
+  lastFrameTime = 0;
+
+  const startLever = document.querySelector(".slot-start-lever");
+  if (startLever) startLever.disabled = true;
+
+  REEL_IDS.forEach((reelId, index) => {
+    const state = reelStates[reelId];
+    const frame = document.getElementById(FRAME_IDS[index]);
+    const stopBtn = document.getElementById(STOP_BTN_IDS[index]);
+
+    if (!state) return;
+
+    buildReel(reelId);
+
+    state.phase = "spinning";
+    state.speed = 1550 + index * 90;
+    state.finalPark = null;
+    state.stopRequested = false;
+    state.stopTargetY = null;
+    state.stopFromY = state.y;
+    state.stopStartMs = null;
+    state.stopEndMs = null;
+
+    frame?.classList.remove(
+      "special-hit",
+      "rainbow-hit",
+      "ready-stop",
+      "stopping",
+      "flash-hold",
+      "flash",
+      "frame-run",
+      "frame-lit",
+      "frame-hit",
+      "frame-flash-all",
+      "frame-win-hold"
+    );
+
+    if (stopBtn) stopBtn.disabled = true;
+  });
+
+  setAllStopButtonGlow(false);
+  setStartLeverGlow(true, true);
+  setStatus("PARK CHANCE!! 1〜3リール自由確定 / 4リールはパークなし");
+
+  cancelAnimationFrame(animationFrameId);
+  animationFrameId = requestAnimationFrame(reelLoop);
+
+for (let i = 0; i < REEL_IDS.length; i++) {
+  await sleep(180);
+
+  stopFreeReelInstant(i);
+
+  const frame = document.getElementById(FRAME_IDS[i]);
+  const forcedPark = getForcedSpecialParkForReel(i);
+
+  frame?.classList.remove("special-hit", "ready-stop", "stopping", "rainbow-hit");
+
+  if (isRainbowPerk(forcedPark)) {
+    frame?.classList.add("rainbow-hit");
+  } else if (isSpecialPerk(forcedPark)) {
+    frame?.classList.add("special-hit");
+  } else {
+    frame?.classList.add("ready-stop");
+  }
+
+  playStopSe();
+}
+
+  await sleep(220);
+
+  playKakuteiSe();
+  triggerSpecialFlash(true);
+  finalizeResultDisplay(false);
+
+  isShuffling = false;
+  isStopping = false;
+  setStartLeverGlow(false);
+  setStatus("1〜3リール自由確定 / 4リールはパークなし");
+}
+
+function getRandomParks() {
+  const reels123Pool = getAllNormalPerks();
+  const reel4Pool = getFixedExhaustionParks();
+
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  return [
+    pick(reels123Pool),
+    pick(reels123Pool),
+    pick(reels123Pool),
+    pick(reel4Pool)
+  ];
+}
+
+function copyResult() {
+  const input = document.getElementById("resultText");
+  if (!input) return;
+
+  const text = input.value.trim();
+  if (!text) return;
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    return;
+  }
+
+  input.select();
+  input.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  input.setSelectionRange(0, 0);
+  input.blur();
+}
+
+function toggleBgm() {
+  bgmEnabled = !bgmEnabled;
+
+  const btn = document.getElementById("bgmBtn");
+  if (btn) btn.textContent = bgmEnabled ? "🎵 BGM ON" : "🎵 BGM OFF";
+
+  if (!bgmEnabled) {
+    bgmSound?.pause();
+  } else {
+    bgmSound?.play().catch(() => {});
+  }
+}
+
+function toggleSe() {
+  seEnabled = !seEnabled;
+
+  const btn = document.getElementById("seBtn");
+  if (btn) btn.textContent = seEnabled ? "🔔 SE ON" : "🔔 SE OFF";
+
+  if (!seEnabled) {
+    [startSound, stopSound, kakuteiSound, atariSound, uraAtariSound, uraHazureSound, gekiatuSound, doreyureSound, hakaiSound].forEach(audio => {
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+    });
+  }
+}
+
+function clearAutoStopTimers() {
+  autoStopTimers.forEach(id => clearTimeout(id));
+  autoStopTimers = [];
+  autoStopSessionId++;
+}
+
+function updateAutoStopButton() {
+  const btn = document.getElementById("autoStopBtn");
+  if (!btn) return;
+  btn.textContent = autoStopEnabled ? "⏱ 自動停止 ON" : "⏱ 自動停止 OFF";
+  btn.style.background = autoStopEnabled
+    ? "rgba(180,40,40,0.75)"
+    : "rgba(0,0,0,0.55)";
+}
+
+function toggleAutoStop() {
+  autoStopEnabled = !autoStopEnabled;
+  updateAutoStopButton();
+  localStorage.setItem("dbd_auto_stop_enabled", autoStopEnabled ? "1" : "0");
+
+  // OFFにした瞬間は、今予約されている自動停止を全部破棄
+  if (!autoStopEnabled) {
+    clearAutoStopTimers();
+  }
+}
+
+function getRandomAutoStopDelayMs() {
+  // 1〜3秒
+  return 300 + Math.floor(Math.random() * 1200);
+}
+
+function scheduleAutoStopSequence() {
+  if (!autoStopEnabled) return;
+  if (!isShuffling) return;
+
+  clearAutoStopTimers();
+
+  const sessionId = autoStopSessionId;
+  let totalDelay = 0; // スタート後まず0秒待つ
+
+  for (let i = 0; i < REEL_IDS.length; i++) {
+    if (isFreeReel(i)) continue;
+
+    totalDelay += getRandomAutoStopDelayMs();
+
+    const timerId = setTimeout(() => {
+      if (sessionId !== autoStopSessionId) return;
+      if (!autoStopEnabled) return;
+      if (!isShuffling) return;
+      if (isUraProcessing || isDoorChanceProcessing || isFrameEventProcessing) return;
+
+      const state = reelStates[REEL_IDS[i]];
+      if (!state || state.phase !== "spinning") return;
+
+      stopReel(i);
+    }, totalDelay);
+
+    autoStopTimers.push(timerId);
+  }
+}
+
+function togglePerkFilter() {
+  const modal = document.getElementById("perkFilterModal");
+  if (!modal) return;
+
+  const willOpen = modal.classList.contains("hidden");
+  modal.classList.toggle("hidden");
+
+  if (willOpen) {
+    renderPerkCheckboxes();
+  }
+}
+
+function closePerkFilterFromOverlay(event) {
+  const modal = document.getElementById("perkFilterModal");
+  if (!modal) return;
+
+  if (event.target === modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+function renderPerkCheckboxes() {
+  const normalList = document.getElementById("perkCheckboxList");
+  const exhaustionList = document.getElementById("exhaustionPerkCheckboxList");
+
+  if (!normalList || !exhaustionList) return;
+
+  normalList.innerHTML = "";
+  exhaustionList.innerHTML = "";
+
+  const normalParks = getAllNormalPerks();
+  const exhaustionParks = getAllExhaustionPerks();
+
+  normalParks.forEach(park => {
+    const key = getPerkKey(park);
+    const checked = enabledPerkKeys.has(key);
+
+    const label = document.createElement("label");
+    label.className = "perk-checkbox-item";
+
+    label.innerHTML = `
+      <input type="checkbox" data-key="${key}" ${checked ? "checked" : ""}>
+      <span>${park.name}</span>
+    `;
+
+    const checkbox = label.querySelector("input");
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        enabledPerkKeys.add(key);
+      } else {
+        enabledPerkKeys.delete(key);
+      }
+
+      saveEnabledPerks();
+      rebuildAllReelsKeepingState();
+    });
+
+    normalList.appendChild(label);
+  });
+
+  exhaustionParks.forEach(park => {
+    const key = getPerkKey(park);
+    const checked = enabledExhaustionPerkKeys.has(key);
+
+    const label = document.createElement("label");
+    label.className = "perk-checkbox-item";
+
+    label.innerHTML = `
+      <input type="checkbox" data-key="${key}" ${checked ? "checked" : ""}>
+      <span>${park.name}</span>
+    `;
+
+    const checkbox = label.querySelector("input");
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        enabledExhaustionPerkKeys.add(key);
+      } else {
+        enabledExhaustionPerkKeys.delete(key);
+      }
+
+      saveEnabledPerks();
+      rebuildAllReelsKeepingState();
+    });
+
+    exhaustionList.appendChild(label);
+  });
+}
+
+function selectAllPerks() {
+  enabledPerkKeys = new Set(getAllNormalPerks().map(getPerkKey));
+  enabledExhaustionPerkKeys = new Set(getAllExhaustionPerks().map(getPerkKey));
+
+  saveEnabledPerks();
+  renderPerkCheckboxes();
+  rebuildAllReelsKeepingState();
+}
+
+function clearAllPerks() {
+  enabledPerkKeys = new Set();
+  enabledExhaustionPerkKeys = new Set();
+
+  saveEnabledPerks();
+  renderPerkCheckboxes();
+  rebuildAllReelsKeepingState();
+}
+
+function rebuildAllReelsKeepingState() {
+  if (isShuffling || isUraProcessing || isDoorChanceProcessing || isFrameEventProcessing) {
+    return;
+  }
+
+  REEL_IDS.forEach(reelId => buildReel(reelId));
+}
+
+function applyVolumes() {
+  if (bgmSound) bgmSound.volume = bgmVolume;
+
+  const seAudios = [
+    startSound,
+    stopSound,
+    kakuteiSound,
+    atariSound,
+    uraAtariSound,
+    uraHazureSound,
+    gekiatuSound,
+    doreyureSound,
+    hakaiSound
+  ];
+
+  seAudios.forEach(audio => {
+    if (!audio) return;
+    audio.volume = seVolume;
+  });
+}
+
+function setBgmVolume(value) {
+  bgmVolume = Number(value) / 100;
+
+  const text = document.getElementById("bgmVolumeText");
+  if (text) text.textContent = `${value}%`;
+
+  if (bgmSound) bgmSound.volume = bgmVolume;
+
+  localStorage.setItem("dbd_bgm_volume", String(value));
+}
+
+function setSeVolume(value) {
+  seVolume = Number(value) / 100;
+
+  const text = document.getElementById("seVolumeText");
+  if (text) text.textContent = `${value}%`;
+
+  const seAudios = [
+    startSound,
+    stopSound,
+    kakuteiSound,
+    atariSound,
+    uraAtariSound,
+    uraHazureSound,
+    gekiatuSound,
+    doreyureSound,
+    hakaiSound
+  ];
+
+  seAudios.forEach(audio => {
+    if (!audio) return;
+    audio.volume = seVolume;
+  });
+
+  localStorage.setItem("dbd_se_volume", String(value));
+}
+
+function goToKillerPage() {
+  sessionStorage.setItem("dbd_page_switching", "1");
+  location.href = "index_DBDsloterkiller.html";
+}
+
+function goToSurvivorPage() {
+  sessionStorage.setItem("dbd_page_switching", "1");
+  location.href = "index_DBDsloter.html";
+}
+
+function stopAllSounds() {
+  [bgmSound, startSound, stopSound, kakuteiSound, atariSound, uraAtariSound, uraHazureSound, gekiatuSound, doreyureSound, hakaiSound].forEach(audio => {
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+  });
+}
+
+function playStartSe() {
+  if (!seEnabled || !startSound) return;
+  startSound.pause();
+  startSound.currentTime = 0;
+  startSound.volume = SE_BASE_VOLUME.start * seVolume;
+  startSound.play().catch(() => {});
+}
+
+function playStopSe() {
+  if (!seEnabled || !stopSound) return;
+  stopSound.pause();
+  stopSound.currentTime = 0;
+  stopSound.volume = SE_BASE_VOLUME.stop * seVolume;
+  stopSound.play().catch(() => {});
+}
+
+function setStatus(text) {
+  const el = document.getElementById("shuffleStatus");
+  if (el) el.textContent = text;
+}
+
+function getNoPerkIndexes() {
+  return reelResults
+    .map((park, index) => ({ park, index }))
+    .filter(item =>
+      item.park &&
+      item.park.name === "パークなし" &&
+      item.index !== PUBLIC_MATCH_FIXED_REEL_INDEX
+    )
+    .map(item => item.index);
+}
+
+function getRevivalCandidates(currentNames = [], excludeNames = []) {
+  return REVIVAL_PERKS.filter(name => {
+    return !currentNames.includes(name) && !excludeNames.includes(name);
+  });
+}
+
+function pickRevivalPlan(noPerkIndexes) {
+  const usedNames = reelResults.map(p => p?.name).filter(Boolean);
+  const plan = [];
+
+  for (const reelIndex of noPerkIndexes) {
+    const exclude = plan.map(x => x.perkName);
+    const candidates = getRevivalCandidates(usedNames.concat(exclude), exclude);
+
+    if (candidates.length === 0) continue;
+
+    const perkName = candidates[Math.floor(Math.random() * candidates.length)];
+    plan.push({ reelIndex, perkName });
+  }
+
+  return plan;
+}
+
+function flashAllReels(times, holdAfter = false, callback) {
+  const sessionId = uraSessionId;
+  let count = 0;
+
+  const flashOnMs = 300;    // 光っている時間
+  const flashGapMs = 250;   // 次に光るまでの間隔
+  const endWaitMs = 500;    // 当たり時の最後の待ち
+  const hazureDelayMs = 300; // ハズレ時、3回点灯後に音を出すまでの待ち
+
+  const doFlash = () => {
+    if (sessionId !== uraSessionId) return;
+
+    FRAME_IDS.forEach(id => {
+      const frame = document.getElementById(id);
+      if (!frame) return;
+
+      frame.classList.add("flash");
+
+      setTimeout(() => {
+        if (sessionId !== uraSessionId) return;
+        frame.classList.remove("flash");
+      }, flashOnMs);
+    });
+
+    count++;
+
+    if (count >= times) {
+      // 当たりなら最後に光を保持
+      if (holdAfter) {
+        setTimeout(() => {
+          if (sessionId !== uraSessionId) return;
+
+          FRAME_IDS.forEach(id => {
+            const frame = document.getElementById(id);
+            if (frame) frame.classList.add("flash-hold");
+          });
+
+          setTimeout(() => {
+            if (sessionId !== uraSessionId) return;
+            if (callback) callback();
+          }, endWaitMs);
+        }, flashOnMs);
+
+        return;
+      }
+
+      // ハズレなら3回目点灯のあと0.3秒空けてからコールバック
+      setTimeout(() => {
+        if (sessionId !== uraSessionId) return;
+
+        setTimeout(() => {
+          if (sessionId !== uraSessionId) return;
+          if (callback) callback();
+        }, hazureDelayMs);
+
+      }, flashOnMs);
+
+      return;
+    }
+
+    setTimeout(doFlash, flashOnMs + flashGapMs);
+  };
+
+  doFlash();
+}
+
+function finalizeResultDisplay(playFinalSe = true) {
+  clearAutoStopTimers();
+
+  REEL_IDS.forEach((_, index) => {
+    const park = reelResults[index];
+    if (!park) return;
+    forceReelDisplay(index, park, true);
+  });
+
+  isShuffling = false;
+  isStopping = false;
+  isUraProcessing = false;
+  isDoorChanceProcessing = false;
+  isFrameEventProcessing = false;
+  uraResolved = true;
+  uraTargetIndexes = [];
+
+  cancelAnimationFrame(animationFrameId);
+  animationFrameId = null;
+
+  setStartLeverGlow(false);
+
+  FRAME_IDS.forEach((frameId, index) => {
+    const frame = document.getElementById(frameId);
+    const park = reelResults[index];
+
+    frame?.classList.remove(
+      "stopping",
+      "ready-stop",
+      "flash",
+      "flash-hold",
+      "frame-run",
+      "frame-lit",
+      "frame-hit",
+      "frame-flash-all"
+    );
+
+    if (isRainbowPerk(park)) {
+      frame?.classList.add("rainbow-hit");
+      frame?.classList.remove("special-hit");
+    } else if (isSpecialPerk(park) || REVIVAL_PERKS.includes(park?.name)) {
+      frame?.classList.add("special-hit");
+      frame?.classList.remove("rainbow-hit");
+    } else {
+      frame?.classList.remove("special-hit", "rainbow-hit");
+      frame?.classList.add("ready-stop");
+    }
+  });
+
+  showResult();
+
+  if (playFinalSe) {
+    playKakuteiSe();
+  }
+
+  const startLever = document.querySelector(".slot-start-lever");
+  if (startLever) startLever.disabled = false;
+
+  STOP_BTN_IDS.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = true;
+  });
+
+  setAllStopButtonGlow(false);
+}
+
+function spinRevivalReel(index, perkName, sessionId) {
+  const reelId = REEL_IDS[index];
+  const state = reelStates[reelId];
+  const frame = document.getElementById(FRAME_IDS[index]);
+
+  const targetPark = allParks.find(p => p.name === perkName);
+  if (!targetPark) return Promise.resolve(false);
+
+  const reelParks = getReelParkList(reelId);
+const targetIndex = reelParks.findIndex(
+  p => p.name === targetPark.name && p.icon === targetPark.icon
+);
+
+  return new Promise(resolve => {
+    if (state._uraAnimId) {
+      cancelAnimationFrame(state._uraAnimId);
+      state._uraAnimId = null;
+    }
+
+    frame?.classList.remove("special-hit", "rainbow-hit", "ready-stop", "flash-hold", "flash");
+    frame?.classList.add("stopping");
+
+    state.phase = "spinning";
+    state.speed = 2600;
+    state.finalPark = null;
+    state.stopRequested = false;
+    state.stopTargetY = null;
+    state.stopFromY = state.y;
+    state.stopStartMs = null;
+    state.stopEndMs = null;
+    state._lastTempSpinTime = 0;
+
+    // 裏抽選用に安全なコピー位置へ再配置
+    recenterReelForUra(reelId);
+
+    const spinStart = performance.now();
+    const fakeSpinDuration = 1200;
+
+    const spinLoop = (now) => {
+      if (!isUraProcessing || sessionId !== uraSessionId) {
+        frame?.classList.remove("stopping");
+        state._uraAnimId = null;
+        resolve(false);
+        return;
+      }
+
+      if (!state._lastTempSpinTime) {
+        state._lastTempSpinTime = now;
+      }
+
+      const dt = Math.min((now - state._lastTempSpinTime) / 1000, 0.05);
+      state._lastTempSpinTime = now;
+
+      state.y += state.speed * dt;
+      applyReelTransform(reelId);
+
+      if (now - spinStart < fakeSpinDuration) {
+        state._uraAnimId = requestAnimationFrame(spinLoop);
+        return;
+      }
+
+      state.phase = "stopping";
+      state.stopFromY = state.y;
+      state.finalPark = targetPark;
+      state.stopTargetY = getUraStopTargetY(targetIndex, reelId);
+      state.stopStartMs = performance.now();
+      state.stopEndMs = state.stopStartMs + 650;
+
+      const settleLoop = (ts) => {
+        if (!isUraProcessing || sessionId !== uraSessionId) {
+          frame?.classList.remove("stopping");
+          state._uraAnimId = null;
+          resolve(false);
+          return;
+        }
+
+        const total = state.stopEndMs - state.stopStartMs;
+        const elapsed = Math.min(ts - state.stopStartMs, total);
+        const t = Math.max(0, Math.min(elapsed / total, 1));
+        const eased = 1 - Math.pow(1 - t, 2.8);
+
+        state.y = state.stopFromY + (state.stopTargetY - state.stopFromY) * eased;
+        applyReelTransform(reelId);
+
+        if (t < 1) {
+          state._uraAnimId = requestAnimationFrame(settleLoop);
+          return;
+        }
+
+        state.y = state.stopTargetY;
+        applyReelTransform(reelId);
+
+        state.phase = "stopped";
+        state.finalPark = targetPark;
+        reelResults[index] = targetPark;
+
+        frame?.classList.remove("stopping");
+        frame?.classList.add("special-hit");
+
+        state._uraAnimId = null;
+        resolve(true);
+      };
+
+      state._uraAnimId = requestAnimationFrame(settleLoop);
+    };
+
+    state._uraAnimId = requestAnimationFrame(spinLoop);
+  });
+}
+
+async function runUraLotteryIfNeeded() {
+  if (uraResolved || isUraProcessing) return;
+
+  const noPerkIndexes = getNoPerkIndexes();
+
+  // パークなしが無ければ裏抽選なしで次へ
+  if (noPerkIndexes.length === 0) {
+    runFrameEventIfNeeded();
+    return;
+  }
+
+  // パークなしがあっても、まず40%で裏抽選に突入するか抽選
+  const shouldEnterUra = Math.random() < URA_ENTRY_RATE;
+  if (!shouldEnterUra) {
+    finalizeResultDisplay();
+    return;
+  }
+
+  uraResolved = true;
+  isUraProcessing = true;
+  const sessionId = ++uraSessionId;
+
+  const startLever = document.querySelector(".slot-start-lever");
+  if (startLever) startLever.disabled = true;
+
+  STOP_BTN_IDS.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = true;
+  });
+
+  const isHit = Math.random() < URA_HIT_RATE;
+
+  flashAllReels(3, isHit, async () => {
+    if (sessionId !== uraSessionId) return;
+
+    if (!isHit) {
+      playUraHazure();
+      finalizeResultDisplay();
+      return;
+    }
+
+    playUraAtari();
+
+    noPerkIndexes.forEach(i => {
+      const frame = document.getElementById(FRAME_IDS[i]);
+      frame?.classList.remove("flash-hold", "flash");
+    });
+
+    const revivalPlan = pickRevivalPlan(noPerkIndexes);
+
+    if (!revivalPlan.length) {
+      playUraHazure();
+      finalizeResultDisplay();
+      return;
+    }
+
+    uraTargetIndexes = revivalPlan.map(x => x.reelIndex);
+    uraSpinPendingCount = revivalPlan.length;
+
+    const results = await Promise.all(
+      revivalPlan.map(({ reelIndex, perkName }) =>
+        spinRevivalReel(reelIndex, perkName, sessionId)
+      )
+    );
+
+    if (sessionId !== uraSessionId) return;
+
+    const successCount = results.filter(Boolean).length;
+
+    if (successCount === 0) {
+      playUraHazure();
+    }
+
+    finalizeResultDisplay();
+  });
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function clearFrameEventClasses() {
+  FRAME_IDS.forEach(id => {
+    const frame = document.getElementById(id);
+    if (!frame) return;
+    frame.classList.remove("frame-run", "frame-lit", "frame-hit", "frame-flash-all", "frame-win-hold");
+  });
+}
+
+function holdWinningFramesRed() {
+  FRAME_IDS.forEach(id => {
+    const frame = document.getElementById(id);
+    if (!frame) return;
+
+    frame.classList.remove("frame-run", "frame-lit", "frame-hit", "frame-flash-all");
+    frame.classList.add("frame-win-hold");
+  });
+}
+
+function setFramesLit(indexes = [], mode = "lit") {
+  FRAME_IDS.forEach((id, i) => {
+    const frame = document.getElementById(id);
+    if (!frame) return;
+
+    frame.classList.remove("frame-run", "frame-lit", "frame-hit");
+
+    if (indexes.includes(i)) {
+      frame.classList.add(mode === "hit" ? "frame-hit" : "frame-lit");
+    }
+  });
+}
+
+function addFrameRun(indexes = []) {
+  FRAME_IDS.forEach((id, i) => {
+    const frame = document.getElementById(id);
+    if (!frame) return;
+
+    frame.classList.remove("frame-run");
+    if (indexes.includes(i)) {
+      frame.classList.add("frame-run");
+    }
+  });
+}
+
+async function flashAllFrames(times = 3, interval = 140, hitMode = true, sessionId = 0) {
+  for (let t = 0; t < times; t++) {
+    if (sessionId !== frameEventSessionId) return false;
+
+    FRAME_IDS.forEach(id => {
+      const frame = document.getElementById(id);
+      if (!frame) return;
+      frame.classList.add(hitMode ? "frame-hit" : "frame-lit", "frame-flash-all");
+    });
+
+    await sleep(interval);
+
+    if (sessionId !== frameEventSessionId) return false;
+
+    FRAME_IDS.forEach(id => {
+      const frame = document.getElementById(id);
+      if (!frame) return;
+      frame.classList.remove("frame-flash-all");
+      if (!hitMode) frame.classList.remove("frame-lit");
+    });
+
+    await sleep(interval);
+  }
+
+  return true;
+}
+
+function hasNoPerkInResults() {
+  return reelResults.some(park => park && park.name === "パークなし");
+}
+
+function canRunFrameEvent() {
+  if (currentSpecialHit) return false;           // 今回スタート時に確定演出が発動していない
+  if (isUraProcessing) return false;
+  if (isFrameEventProcessing) return false;
+  if (reelResults.length !== 4) return false;
+  if (reelResults.some(p => !p)) return false;
+  if (hasNoPerkInResults()) return false;        // パークなし が1つでもあれば不発
+  return true;
+}
+
+function pickCurrentStartSpecialHit() {
+  // 前回イベントで次回ブーストが仕込まれているなら、今回だけ優先適用
+  if (pendingNextSpecialRate != null) {
+    const hit = Math.random() < pendingNextSpecialRate;
+    pendingNextSpecialRate = null;
+    pendingNextSpecialSource = null;
+    return hit;
+  }
+
+  return Math.random() < SPECIAL_HIT_RATE;
+}
+
+function setPendingNextSpecialFromEvent(eventType) {
+  if (eventType === "event1") {
+    pendingNextSpecialRate = NEXT_FREE_RATE_EVENT1;
+    pendingNextSpecialSource = "event1";
+  } else if (eventType === "event2") {
+    pendingNextSpecialRate = NEXT_FREE_RATE_EVENT2;
+    pendingNextSpecialSource = "event2";
+  }
+}
+
+async function playFrameEvent1(isHit, sessionId) {
+  clearFrameEventClasses();
+
+  // 左→右 白演出
+  for (let i = 0; i < FRAME_IDS.length; i++) {
+    if (sessionId !== frameEventSessionId) return false;
+
+    setFramesLit([i], "lit");
+    await sleep(200);
+  }
+
+  if (sessionId !== frameEventSessionId) return false;
+  await sleep(250);
+
+  if (!isHit) {
+    clearFrameEventClasses();
+    return true;
+  }
+
+  // 一瞬全白
+  setFramesLit([0,1,2,3], "lit");
+  await sleep(120);
+
+  // 白フラッシュ
+  await flashAllFrames(2, 80, false, sessionId);
+
+  // 赤確定
+  setFramesLit([0,1,2,3], "hit");
+
+  return true;
+}
+
+async function playFrameEvent2(isHit, sessionId) {
+  clearFrameEventClasses();
+
+  const sequence = [
+    [0,2],
+    [1,3],
+    [0,2],
+    [1,3],
+    [0,2],
+    [1,3]
+  ];
+
+  // 白往復
+  for (const indexes of sequence) {
+    if (sessionId !== frameEventSessionId) return false;
+
+    setFramesLit(indexes, "lit");
+    await sleep(180);
+  }
+
+  if (!isHit) {
+    clearFrameEventClasses();
+    return true;
+  }
+
+  // 一瞬全白
+  setFramesLit([0,1,2,3], "lit");
+  await sleep(120);
+
+  // 白フラッシュ
+  await flashAllFrames(2, 80, false, sessionId);
+
+  // 赤確定
+  setFramesLit([0,1,2,3], "hit");
+
+  return true;
+}
+
+async function runFrameEventIfNeeded() {
+  if (!canRunFrameEvent()) {
+    finalizeResultDisplay();
+    return;
+  }
+
+  const trigger = Math.random() < FRAME_EVENT_TRIGGER_RATE;
+  if (!trigger) {
+  await runDoorChanceIfNeeded();
+  return;
+}
+
+  isFrameEventProcessing = true;
+  const sessionId = ++frameEventSessionId;
+
+  const startLever = document.querySelector(".slot-start-lever");
+  if (startLever) startLever.disabled = true;
+
+  STOP_BTN_IDS.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = true;
+  });
+
+  let isHit = false;
+
+  try {
+    const isEvent1 = Math.random() < FRAME_EVENT1_RATE;
+    const eventType = isEvent1 ? "event1" : "event2";
+    isHit = Math.random() < (isEvent1 ? FRAME_EVENT1_HIT_RATE : FRAME_EVENT2_HIT_RATE);
+
+    if (isEvent1) {
+      await playFrameEvent1(isHit, sessionId);
+    } else {
+      await playFrameEvent2(isHit, sessionId);
+    }
+
+    if (sessionId !== frameEventSessionId) return;
+
+    if (isHit) {
+      setPendingNextSpecialFromEvent(eventType);
+
+      // 激アツ音
+      playGekiatuSound();
+
+      // 当たり音
+      playUraAtari();
+
+      // 赤フレーム保持
+      holdWinningFramesRed();
+    } else {
+      playUraHazure();
+      clearFrameEventClasses();
+    }
+
+    await sleep(250);
+
+  } catch (e) {
+    console.error("runFrameEventIfNeeded error:", e);
+    } finally {
+    isFrameEventProcessing = false;
+
+    if (!isShuffling || reelResults.length === 4) {
+      finalizeResultDisplay();
+    }
+
+    if (isHit) {
+      holdWinningFramesRed();
+    }
+  }
+}
+
+function breakItaClip() {
+  if (!slotIta) return;
+  slotIta.style.display = "none";
+}
+
+function playParkChanceWithClipBreak() {
+  const video = document.getElementById("parkChanceVideo");
+  breakItaClip();
+
+  setTimeout(() => {
+    if (!video) return;
+    video.style.display = "block";
+    video.currentTime = 0;
+    video.play().catch(() => {});
+  }, 120);
+}
+
+function flashScreenQuick() {
+  const flash = document.getElementById("screenFlash");
+  if (!flash) return;
+
+  flash.classList.add("show");
+  setTimeout(() => flash.classList.remove("show"), 90);
+}
+
+
+function hideParkChanceVideo() {
+  const video = document.getElementById("parkChanceVideo");
+  if (!video) return;
+
+  video.pause();
+  video.currentTime = 0;
+  video.style.display = "none";
+}
+
+function setExhaustionFrameTight(enabled) {
+  // 今回は tight 演出を使わない
+}
+
+function isExhaustionReelIndex(index) {
+  return index === PUBLIC_MATCH_FIXED_REEL_INDEX;
+}
+
+
+function showResult() {
+  const names = reelResults.map(p => p?.name || "").filter(Boolean);
+  const text = names.join(" / ");
+
+  const input = document.getElementById("resultText");
+  if (input) input.value = text;
+}
+
+const BASE_WIDTH = 1600;
+const BASE_HEIGHT = 900;
+
+function fitGameToWindow() {
+  const stage = document.getElementById("app-stage");
+  const root = document.getElementById("game-root");
+  if (!stage || !root) return;
+
+  const stageWidth = stage.clientWidth;
+  const stageHeight = stage.clientHeight;
+
+  const scaleX = stageWidth / BASE_WIDTH;
+  const scaleY = stageHeight / BASE_HEIGHT;
+  const scale = Math.min(scaleX, scaleY);
+
+  root.style.transform = `scale(${scale})`;
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  fitGameToWindow();
+
+  loadEnabledPerks();
+  renderPerkCheckboxes();
+
+  buildReel("reel1");
+  buildReel("reel2");
+  buildReel("reel3");
+  buildReel("reel4");
+
+  sessionStorage.removeItem("dbd_page_switching");
+  stopAllSounds();
+
+  const savedBgmVolume = localStorage.getItem("dbd_bgm_volume");
+  const savedSeVolume = localStorage.getItem("dbd_se_volume");
+  const savedAutoStop = localStorage.getItem("dbd_auto_stop_enabled");
+
+  const bgmSlider = document.getElementById("bgmVolume");
+  const seSlider = document.getElementById("seVolume");
+
+  if (savedBgmVolume !== null) {
+    const v = Number(savedBgmVolume);
+    bgmVolume = v / 100;
+    if (bgmSlider) bgmSlider.value = v;
+    const text = document.getElementById("bgmVolumeText");
+    if (text) text.textContent = `${v}%`;
+  }
+
+  if (savedSeVolume !== null) {
+    const v = Number(savedSeVolume);
+    seVolume = v / 100;
+    if (seSlider) seSlider.value = v;
+    const text = document.getElementById("seVolumeText");
+    if (text) text.textContent = `${v}%`;
+  }
+
+  applyVolumes();
+
+  autoStopEnabled = savedAutoStop === "1";
+  updateAutoStopButton();
+
+  setStatus("待機中");
+
+  const playAudio = () => {
+    if (bgmEnabled) {
+      bgmSound?.play().catch(() => {});
+    }
+    document.removeEventListener("click", playAudio);
+  };
+
+  document.addEventListener("click", playAudio);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+
+  const modal = document.getElementById("perkFilterModal");
+  if (!modal) return;
+
+  if (!modal.classList.contains("hidden")) {
+    modal.classList.add("hidden");
+  }
+});
+
+window.addEventListener("resize", fitGameToWindow);
+
+</script>
+
+<div id="perkTooltip" class="perk-tooltip hidden">
+  <div id="perkTooltipTitle" class="perk-tooltip-title"></div>
+  <div id="perkTooltipDesc" class="perk-tooltip-desc"></div>
+</div>
+
+</body>
+</html>
